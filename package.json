@@ -1,7 +1,7 @@
 {
-  "name": "threejs-cube-generator",
+  "name": "threejs-mcp-server",
   "version": "1.0.0",
-  "description": "Three.js立方体ジェネレーターアプリケーション",
+  "description": "Three.js MCPサーバーアプリケーション",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

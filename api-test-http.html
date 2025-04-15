@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js 立方体ジェネレーター HTTP API テスト</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            padding: 20px;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        h2 {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            min-height: 100px;
+            font-family: monospace;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .response pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .error {
+            border-left-color: #f44336;
+        }
+        
+        .nav-buttons {
+            margin-bottom: 20px;
+        }
+        
+        .nav-buttons button {
+            display: inline-block;
+            width: auto;
+            margin-right: 10px;
+        }
+        
+        .cube-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+        
+        .cube-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .cube-color {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+        }
+        
+        .cube-actions button {
+            width: auto;
+            padding: 5px 10px;
+            margin-left: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-buttons">
+        <button id="back-to-main">メインページに戻る</button>
+        <button id="refresh-cubes">立方体リストを更新</button>
+    </div>
+    
+    <h1>Three.js 立方体ジェネレーター HTTP API テスト</h1>
+    
+    <div class="container">
+        <div class="card">
+            <h2>立方体を追加</h2>
+            <div class="form-group">
+                <label for="cube-size">サイズ:</label>
+                <input type="number" id="cube-size" value="10" min="1" max="50">
+            </div>
+            
+            <div class="form-group">
+                <label for="cube-color">色 (16進数):</label>
+                <input type="text" id="cube-color" value="ff0000">
+            </div>
+            
+            <h3>位置</h3>
+            <div class="form-group">
+                <label for="position-x">X:</label>
+                <input type="number" id="position-x" value="0" step="1">
+            </div>
+            <div class="form-group">
+                <label for="position-y">Y:</label>
+                <input type="number" id="position-y" value="10" step="1">
+            </div>
+            <div class="form-group">
+                <label for="position-z">Z:</label>
+                <input type="number" id="position-z" value="0" step="1">
+            </div>
+            
+            <h3>回転 (ラジアン)</h3>
+            <div class="form-group">
+                <label for="rotation-x">X:</label>
+                <input type="number" id="rotation-x" value="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="rotation-y">Y:</label>
+                <input type="number" id="rotation-y" value="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="rotation-z">Z:</label>
+                <input type="number" id="rotation-z" value="0" step="0.1">
+            </div>
+            
+            <button id="add-cube">立方体を追加</button>
+            <button id="add-random-cube">ランダム立方体を追加</button>
+            
+            <div id="add-response" class="response" style="display: none;">
+                <h3>レスポンス:</h3>
+                <pre id="add-response-text"></pre>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>立方体リスト</h2>
+            <button id="get-all-cubes">すべての立方体を取得</button>
+            <button id="delete-all-cubes">すべての立方体を削除</button>
+            
+            <ul id="cube-list" class="cube-list">
+                <!-- 立方体リストがここに表示されます -->
+            </ul>
+            
+            <div id="list-response" class="response" style="display: none;">
+                <h3>レスポンス:</h3>
+                <pre id="list-response-text"></pre>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>特定の立方体を取得</h2>
+            <div class="form-group">
+                <label for="get-cube-id">立方体ID:</label>
+                <input type="text" id="get-cube-id" placeholder="例: 1618456789012">
+            </div>
+            
+            <button id="get-cube">立方体を取得</button>
+            
+            <div id="get-response" class="response" style="display: none;">
+                <h3>レスポンス:</h3>
+                <pre id="get-response-text"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        
+        // メインページに戻るボタン
+        document.getElementById('back-to-main').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+        
+        // 立方体リストを更新ボタン
+        document.getElementById('refresh-cubes').addEventListener('click', function() {
+            fetchAllCubes();
+        });
+        
+        // 立方体を追加ボタン
+        document.getElementById('add-cube').addEventListener('click', async function() {
+            const size = parseFloat(document.getElementById('cube-size').value);
+            const colorHex = document.getElementById('cube-color').value;
+            const color = parseInt(colorHex, 16);
+            
+            const posX = parseFloat(document.getElementById('position-x').value);
+            const posY = parseFloat(document.getElementById('position-y').value);
+            const posZ = parseFloat(document.getElementById('position-z').value);
+            
+            const rotX = parseFloat(document.getElementById('rotation-x').value);
+            const rotY = parseFloat(document.getElementById('rotation-y').value);
+            const rotZ = parseFloat(document.getElementById('rotation-z').value);
+            
+            const cubeData = {
+                size: size,
+                color: color,
+                position: { x: posX, y: posY, z: posZ },
+                rotation: { x: rotX, y: rotY, z: rotZ }
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/cubes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cubeData)
+                });
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('add-response');
+                const responseTextElement = document.getElementById('add-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+                
+                // 立方体リストを更新
+                fetchAllCubes();
+            } catch (error) {
+                const responseElement = document.getElementById('add-response');
+                const responseTextElement = document.getElementById('add-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
+        
+        // ランダム立方体を追加ボタン
+        document.getElementById('add-random-cube').addEventListener('click', async function() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/cubes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('add-response');
+                const responseTextElement = document.getElementById('add-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+                
+                // 立方体リストを更新
+                fetchAllCubes();
+            } catch (error) {
+                const responseElement = document.getElementById('add-response');
+                const responseTextElement = document.getElementById('add-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
+        
+        // すべての立方体を取得ボタン
+        document.getElementById('get-all-cubes').addEventListener('click', function() {
+            fetchAllCubes(true);
+        });
+        
+        // すべての立方体を削除ボタン
+        document.getElementById('delete-all-cubes').addEventListener('click', async function() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/cubes`, {
+                    method: 'DELETE'
+                });
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('list-response');
+                const responseTextElement = document.getElementById('list-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+                
+                // 立方体リストを更新
+                fetchAllCubes();
+            } catch (error) {
+                const responseElement = document.getElementById('list-response');
+                const responseTextElement = document.getElementById('list-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
+        
+        // 特定の立方体を取得ボタン
+        document.getElementById('get-cube').addEventListener('click', async function() {
+            const cubeId = document.getElementById('get-cube-id').value;
+            
+            if (!cubeId) {
+                alert('立方体IDを入力してください');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/cubes/${cubeId}`);
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('get-response');
+                const responseTextElement = document.getElementById('get-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+            } catch (error) {
+                const responseElement = document.getElementById('get-response');
+                const responseTextElement = document.getElementById('get-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
+        
+        // すべての立方体を取得して表示する関数
+        async function fetchAllCubes(showResponse = false) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/cubes`);
+                
+                const cubes = await response.json();
+                
+                if (showResponse) {
+                    const responseElement = document.getElementById('list-response');
+                    const responseTextElement = document.getElementById('list-response-text');
+                    
+                    responseTextElement.textContent = JSON.stringify(cubes, null, 2);
+                    responseElement.style.display = 'block';
+                    responseElement.classList.remove('error');
+                }
+                
+                // 立方体リストを更新
+                updateCubeList(cubes);
+            } catch (error) {
+                if (showResponse) {
+                    const responseElement = document.getElementById('list-response');
+                    const responseTextElement = document.getElementById('list-response-text');
+                    
+                    responseTextElement.textContent = `エラー: ${error.message}`;
+                    responseElement.style.display = 'block';
+                    responseElement.classList.add('error');
+                }
+                
+                // エラーメッセージを表示
+                const cubeList = document.getElementById('cube-list');
+                cubeList.innerHTML = `<li>エラー: ${error.message}</li>`;
+            }
+        }
+        
+        // 立方体リストを更新する関数
+        function updateCubeList(cubes) {
+            const cubeList = document.getElementById('cube-list');
+            cubeList.innerHTML = '';
+            
+            if (cubes.length === 0) {
+                cubeList.innerHTML = '<li>立方体がありません</li>';
+                return;
+            }
+            
+            cubes.forEach(cube => {
+                const li = document.createElement('li');
+                li.className = 'cube-item';
+                
+                const colorHex = cube.color.toString(16).padStart(6, '0');
+                
+                li.innerHTML = `
+                    <div>
+                        <span class="cube-color" style="background-color: #${colorHex};"></span>
+                        ID: ${cube.id}, サイズ: ${cube.size}
+                    </div>
+                    <div class="cube-actions">
+                        <button class="view-cube" data-id="${cube.id}">詳細</button>
+                        <button class="delete-cube" data-id="${cube.id}">削除</button>
+                    </div>
+                `;
+                
+                cubeList.appendChild(li);
+            });
+            
+            // 詳細ボタンのイベントリスナーを追加
+            document.querySelectorAll('.view-cube').forEach(button => {
+                button.addEventListener('click', function() {
+                    const cubeId = this.getAttribute('data-id');
+                    document.getElementById('get-cube-id').value = cubeId;
+                    document.getElementById('get-cube').click();
+                });
+            });
+            
+            // 削除ボタンのイベントリスナーを追加
+            document.querySelectorAll('.delete-cube').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const cubeId = this.getAttribute('data-id');
+                    
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/cubes/${cubeId}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        const responseData = await response.json();
+                        
+                        const responseElement = document.getElementById('list-response');
+                        const responseTextElement = document.getElementById('list-response-text');
+                        
+                        responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                        responseElement.style.display = 'block';
+                        responseElement.classList.remove('error');
+                        
+                        // 立方体リストを更新
+                        fetchAllCubes();
+                    } catch (error) {
+                        const responseElement = document.getElementById('list-response');
+                        const responseTextElement = document.getElementById('list-response-text');
+                        
+                        responseTextElement.textContent = `エラー: ${error.message}`;
+                        responseElement.style.display = 'block';
+                        responseElement.classList.add('error');
+                    }
+                });
+            });
+        }
+        
+        // ページ読み込み時に立方体リストを取得
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchAllCubes();
+        });
+    </script>
+</body>
+</html>

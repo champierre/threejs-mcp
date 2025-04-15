@@ -285,7 +285,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // WebSocketの初期化
     initWebSocket();
-    
-    // 「立方体を追加」ボタンのイベントリスナー
-    document.getElementById('add-cube').addEventListener('click', addCube);
 });

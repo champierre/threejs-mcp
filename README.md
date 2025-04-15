@@ -57,6 +57,18 @@
 POST /api/cubes
 ```
 
+curlコマンド例:
+```bash
+curl -X POST http://localhost:3000/api/cubes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "size": 15,
+    "color": 16711680,
+    "position": { "x": 0, "y": 10, "z": 0 },
+    "rotation": { "x": 0, "y": 0, "z": 0 }
+  }'
+```
+
 リクエスト例:
 ```json
 {
@@ -82,6 +94,11 @@ POST /api/cubes
 
 ```
 GET /api/cubes
+```
+
+curlコマンド例:
+```bash
+curl -X GET http://localhost:3000/api/cubes
 ```
 
 レスポンス例:
@@ -110,6 +127,11 @@ GET /api/cubes
 GET /api/cubes/:id
 ```
 
+curlコマンド例:
+```bash
+curl -X GET http://localhost:3000/api/cubes/1618456789012
+```
+
 レスポンス例:
 ```json
 {
@@ -127,6 +149,11 @@ GET /api/cubes/:id
 DELETE /api/cubes/:id
 ```
 
+curlコマンド例:
+```bash
+curl -X DELETE http://localhost:3000/api/cubes/1618456789012
+```
+
 レスポンス例:
 ```json
 {
@@ -138,6 +165,11 @@ DELETE /api/cubes/:id
 
 ```
 DELETE /api/cubes
+```
+
+curlコマンド例:
+```bash
+curl -X DELETE http://localhost:3000/api/cubes
 ```
 
 レスポンス例:

@@ -16,7 +16,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 // データファイルのパス
-const DATA_FILE = path.join(__dirname, 'cubes-data.json');
+const DATA_FILE = path.join(__dirname, 'data.json');
 
 // CORSを有効にする
 app.use(cors());

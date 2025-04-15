@@ -32,6 +32,7 @@
    ```
 
 3. ブラウザで `http://localhost:3000/index.html` にアクセスします
+4. APIテストページは `http://localhost:3000/test.html` でアクセス可能
 
 ## 使い方
 

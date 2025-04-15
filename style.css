@@ -11,23 +11,40 @@ body {
     overflow: hidden;
 }
 
+.menu-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1000; /* メニューバーを最前面に表示 */
+}
+
+.menu-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.menu-items {
+    display: flex;
+    gap: 10px;
+}
+
 .container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: calc(100vh - 50px); /* Adjust for menu bar height */
     width: 100vw;
 }
 
 #scene-container {
     flex: 1;
     background-color: #000;
-}
-
-.controls {
-    padding: 15px;
-    background-color: #333;
-    display: flex;
-    justify-content: center;
+    position: relative;
+    z-index: 1; /* シーンコンテナは背面に */
 }
 
 button {

@@ -26,7 +26,9 @@ function init() {
 
     // レンダラーの設定
     renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    // メニューバーの高さを考慮してサイズを設定
+    const menuBarHeight = document.querySelector('.menu-bar').offsetHeight;
+    renderer.setSize(window.innerWidth, window.innerHeight - menuBarHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     document.getElementById('scene-container').appendChild(renderer.domElement);
 
@@ -60,9 +62,10 @@ function init() {
 
 // ウィンドウリサイズ時の処理
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const menuBarHeight = document.querySelector('.menu-bar').offsetHeight;
+    camera.aspect = window.innerWidth / (window.innerHeight - menuBarHeight);
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(window.innerWidth, window.innerHeight - menuBarHeight);
 }
 
 // 立方体を追加する関数

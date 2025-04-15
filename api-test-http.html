@@ -231,6 +231,51 @@
     
     <script>
         const API_BASE_URL = 'http://localhost:3000/api';
+        let socket;
+        
+        // WebSocketの初期化
+        function initWebSocket() {
+            // WebSocketの接続
+            socket = new WebSocket(`ws://${window.location.hostname}:3000`);
+            
+            // 接続イベント
+            socket.addEventListener('open', (event) => {
+                console.log('WebSocketサーバーに接続しました');
+            });
+            
+            // メッセージ受信イベント
+            socket.addEventListener('message', (event) => {
+                const message = JSON.parse(event.data);
+                
+                switch (message.type) {
+                    case 'init':
+                        // 初期データを受信した場合、立方体リストを更新
+                        updateCubeList(message.cubes);
+                        break;
+                    case 'add':
+                        // 新しい立方体が追加された場合、立方体リストを更新
+                        fetchAllCubes();
+                        break;
+                    case 'delete':
+                    case 'clear':
+                        // 立方体が削除された場合、立方体リストを更新
+                        fetchAllCubes();
+                        break;
+                }
+            });
+            
+            // エラーイベント
+            socket.addEventListener('error', (event) => {
+                console.error('WebSocketエラー:', event);
+            });
+            
+            // 切断イベント
+            socket.addEventListener('close', (event) => {
+                console.log('WebSocketサーバーから切断されました');
+                // 再接続を試みる
+                setTimeout(initWebSocket, 3000);
+            });
+        }
         
         // メインページに戻るボタン
         document.getElementById('back-to-main').addEventListener('click', function() {
@@ -497,6 +542,7 @@
         // ページ読み込み時に立方体リストを取得
         document.addEventListener('DOMContentLoaded', function() {
             fetchAllCubes();
+            initWebSocket();
         });
     </script>
 </body>

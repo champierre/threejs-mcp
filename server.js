@@ -3,8 +3,17 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const WebSocket = require('ws');
+
 const app = express();
 const port = 3000;
+
+// HTTPサーバーの作成
+const server = http.createServer(app);
+
+// WebSocketサーバーの作成
+const wss = new WebSocket.Server({ server });
 
 // データファイルのパス
 const DATA_FILE = path.join(__dirname, 'cubes-data.json');
@@ -20,6 +29,38 @@ app.use(express.static('./'));
 
 // 立方体データを保存する配列
 let cubes = [];
+
+// WebSocketクライアントの接続を管理
+const clients = new Set();
+
+// WebSocketの接続イベント
+wss.on('connection', (ws) => {
+    console.log('クライアントが接続しました');
+    
+    // クライアントをセットに追加
+    clients.add(ws);
+    
+    // 接続時に現在の立方体データを送信
+    ws.send(JSON.stringify({
+        type: 'init',
+        cubes: cubes
+    }));
+    
+    // 切断イベント
+    ws.on('close', () => {
+        console.log('クライアントが切断しました');
+        clients.delete(ws);
+    });
+});
+
+// すべてのクライアントに通知を送信する関数
+function notifyClients(message) {
+    clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(message));
+        }
+    });
+}
 
 // データファイルから立方体データを読み込む
 function loadCubesData() {
@@ -82,6 +123,12 @@ app.post('/api/cubes', (req, res) => {
     // データをファイルに保存
     saveCubesData();
     
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'add',
+        cube: cube
+    });
+    
     console.log(`立方体が追加されました。ID: ${cube.id}, 現在の立方体数: ${cubes.length}`);
     
     // 追加した立方体を返す
@@ -111,10 +158,17 @@ app.delete('/api/cubes/:id', (req, res) => {
     const index = cubes.findIndex(c => c.id === id);
     
     if (index !== -1) {
+        const deletedCube = cubes[index];
         cubes.splice(index, 1);
         
         // データをファイルに保存
         saveCubesData();
+        
+        // WebSocketクライアントに通知
+        notifyClients({
+            type: 'delete',
+            id: id
+        });
         
         res.status(200).json({ message: '立方体が削除されました' });
     } else {
@@ -129,10 +183,16 @@ app.delete('/api/cubes', (req, res) => {
     // データをファイルに保存
     saveCubesData();
     
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'clear'
+    });
+    
     res.status(200).json({ message: 'すべての立方体が削除されました' });
 });
 
 // サーバーを起動
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`サーバーが http://localhost:${port} で起動しました`);
+    console.log(`WebSocketサーバーが ws://localhost:${port} で起動しました`);
 });

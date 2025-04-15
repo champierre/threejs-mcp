@@ -6,44 +6,105 @@ const cubes = [];
 const cubeSize = 10;
 // APIのベースURL
 const API_BASE_URL = 'http://localhost:3000/api';
-// 最後に取得した立方体のID
-let lastFetchedCubeId = 0;
+// WebSocketの接続
+let socket;
 // 立方体の色をランダムに生成する関数
 const getRandomColor = () => {
     return Math.floor(Math.random() * 16777215);
 };
 
-// サーバーからすべての立方体データを取得して表示する
-async function fetchAndDisplayCubes() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/cubes`);
-        if (!response.ok) {
-            throw new Error(`APIエラー: ${response.status}`);
+// WebSocketの初期化
+function initWebSocket() {
+    // WebSocketの接続
+    socket = new WebSocket(`ws://${window.location.hostname}:3000`);
+    
+    // 接続イベント
+    socket.addEventListener('open', (event) => {
+        console.log('WebSocketサーバーに接続しました');
+    });
+    
+    // メッセージ受信イベント
+    socket.addEventListener('message', (event) => {
+        const message = JSON.parse(event.data);
+        
+        switch (message.type) {
+            case 'init':
+                // 初期データを受信した場合、すべての立方体を表示
+                handleInitMessage(message);
+                break;
+            case 'add':
+                // 新しい立方体が追加された場合
+                handleAddMessage(message);
+                break;
+            case 'delete':
+                // 立方体が削除された場合
+                handleDeleteMessage(message);
+                break;
+            case 'clear':
+                // すべての立方体が削除された場合
+                handleClearMessage();
+                break;
         }
-        
-        const cubesData = await response.json();
-        
-        // 新しい立方体のみを追加
-        cubesData.forEach(cubeData => {
-            // すでに表示されている立方体はスキップ
-            if (cubes.some(cube => cube.userData && cube.userData.id === cubeData.id)) {
-                return;
-            }
-            
-            // 立方体を作成して表示
-            addCubeFromData(cubeData);
-            
-            // 最後に取得した立方体のIDを更新
-            if (cubeData.id > lastFetchedCubeId) {
-                lastFetchedCubeId = cubeData.id;
-            }
-        });
-        
-        console.log(`${cubesData.length}個の立方体データを取得しました`);
-    } catch (error) {
-        console.error('立方体データの取得に失敗しました:', error);
+    });
+    
+    // エラーイベント
+    socket.addEventListener('error', (event) => {
+        console.error('WebSocketエラー:', event);
+    });
+    
+    // 切断イベント
+    socket.addEventListener('close', (event) => {
+        console.log('WebSocketサーバーから切断されました');
+        // 再接続を試みる
+        setTimeout(initWebSocket, 3000);
+    });
+}
+
+// 初期データを処理する関数
+function handleInitMessage(message) {
+    // シーンから既存の立方体をすべて削除
+    cubes.forEach(cube => scene.remove(cube));
+    cubes.length = 0;
+    
+    // 受信したすべての立方体を追加
+    message.cubes.forEach(cubeData => {
+        addCubeFromData(cubeData);
+    });
+    
+    console.log(`${message.cubes.length}個の立方体を初期化しました`);
+}
+
+// 立方体追加メッセージを処理する関数
+function handleAddMessage(message) {
+    // すでに表示されている立方体はスキップ
+    if (cubes.some(cube => cube.userData && cube.userData.id === message.cube.id)) {
+        return;
+    }
+    
+    // 立方体を作成して表示
+    addCubeFromData(message.cube);
+    console.log(`新しい立方体が追加されました。ID: ${message.cube.id}`);
+}
+
+// 立方体削除メッセージを処理する関数
+function handleDeleteMessage(message) {
+    const index = cubes.findIndex(cube => cube.userData && cube.userData.id === message.id);
+    if (index !== -1) {
+        // シーンから立方体を削除
+        scene.remove(cubes[index]);
+        cubes.splice(index, 1);
+        console.log(`立方体が削除されました。ID: ${message.id}`);
     }
 }
+
+// すべての立方体削除メッセージを処理する関数
+function handleClearMessage() {
+    // シーンから既存の立方体をすべて削除
+    cubes.forEach(cube => scene.remove(cube));
+    cubes.length = 0;
+    console.log('すべての立方体が削除されました');
+}
+
 
 // APIから取得したデータに基づいて立方体を追加する関数
 function addCubeFromData(cubeData) {
@@ -222,15 +283,12 @@ function animate() {
 }
 
 // DOMが読み込まれたら初期化
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     init();
     
-    // サーバーからすべての立方体データを取得して表示
-    await fetchAndDisplayCubes();
+    // WebSocketの初期化
+    initWebSocket();
     
     // 「立方体を追加」ボタンのイベントリスナー
     document.getElementById('add-cube').addEventListener('click', addCube);
-    
-    // 定期的にサーバーから新しい立方体データを取得（5秒ごと）
-    setInterval(fetchAndDisplayCubes, 5000);
 });

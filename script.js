@@ -4,159 +4,86 @@ let scene, camera, renderer, controls;
 const cubes = [];
 // 立方体のサイズ
 const cubeSize = 10;
+// APIのベースURL
+const API_BASE_URL = 'http://localhost:3000/api';
+// 最後に取得した立方体のID
+let lastFetchedCubeId = 0;
 // 立方体の色をランダムに生成する関数
 const getRandomColor = () => {
     return Math.floor(Math.random() * 16777215);
 };
 
-// APIのベースURL
-const API_BASE_URL = 'http://localhost:3000/api';
-
-// HTTP APIクライアント
-const CubeAPIClient = {
-    // 立方体を追加する
-    async addCube(options = {}) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/cubes`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(options)
-            });
-            
-            if (!response.ok) {
-                throw new Error(`APIエラー: ${response.status}`);
-            }
-            
-            const cubeData = await response.json();
-            const cube = addCubeFromData(cubeData);
-            return cube;
-        } catch (error) {
-            console.error('立方体の追加に失敗しました:', error);
-            // APIが失敗した場合はローカルで立方体を追加
-            return addCubeWithConfig(options);
+// サーバーからすべての立方体データを取得して表示する
+async function fetchAndDisplayCubes() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/cubes`);
+        if (!response.ok) {
+            throw new Error(`APIエラー: ${response.status}`);
         }
-    },
-    
-    // すべての立方体を取得する
-    async getAllCubes() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/cubes`);
-            
-            if (!response.ok) {
-                throw new Error(`APIエラー: ${response.status}`);
+        
+        const cubesData = await response.json();
+        
+        // 新しい立方体のみを追加
+        cubesData.forEach(cubeData => {
+            // すでに表示されている立方体はスキップ
+            if (cubes.some(cube => cube.userData && cube.userData.id === cubeData.id)) {
+                return;
             }
             
-            return await response.json();
-        } catch (error) {
-            console.error('立方体の取得に失敗しました:', error);
-            return [];
-        }
-    },
-    
-    // 特定の立方体を取得する
-    async getCube(id) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/cubes/${id}`);
+            // 立方体を作成して表示
+            addCubeFromData(cubeData);
             
-            if (!response.ok) {
-                throw new Error(`APIエラー: ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error(`立方体 ${id} の取得に失敗しました:`, error);
-            return null;
-        }
-    },
-    
-    // 特定の立方体を削除する
-    async deleteCube(id) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/cubes/${id}`, {
-                method: 'DELETE'
-            });
-            
-            if (!response.ok) {
-                throw new Error(`APIエラー: ${response.status}`);
-            }
-            
-            // シーンから立方体を削除
-            const index = cubes.findIndex(cube => cube.userData.id === id);
-            if (index !== -1) {
-                scene.remove(cubes[index]);
-                cubes.splice(index, 1);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error(`立方体 ${id} の削除に失敗しました:`, error);
-            return null;
-        }
-    },
-    
-    // すべての立方体を削除する
-    async deleteAllCubes() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/cubes`, {
-                method: 'DELETE'
-            });
-            
-            if (!response.ok) {
-                throw new Error(`APIエラー: ${response.status}`);
-            }
-            
-            // シーンからすべての立方体を削除
-            cubes.forEach(cube => scene.remove(cube));
-            cubes.length = 0;
-            
-            return await response.json();
-        } catch (error) {
-            console.error('すべての立方体の削除に失敗しました:', error);
-            return null;
-        }
-    }
-};
-
-// 後方互換性のためのAPIオブジェクト
-const CubeAPI = {
-    // 立方体を追加する
-    addCube: function(options = {}) {
-        // 同期的に立方体を追加（非推奨）
-        console.warn('CubeAPI.addCube() は非推奨です。代わりに CubeAPIClient.addCube() を使用してください。');
-        return addCubeWithConfig({
-            size: options.size || cubeSize,
-            color: options.color || getRandomColor(),
-            position: options.position || {
-                x: Math.random() * 50 - 25,
-                y: Math.random() * 25 + 5,
-                z: Math.random() * 50 - 25
-            },
-            rotation: options.rotation || {
-                x: Math.random() * Math.PI,
-                y: Math.random() * Math.PI,
-                z: Math.random() * Math.PI
+            // 最後に取得した立方体のIDを更新
+            if (cubeData.id > lastFetchedCubeId) {
+                lastFetchedCubeId = cubeData.id;
             }
         });
-    },
-    
-    // シーン内の立方体の数を取得
-    getCubeCount: function() {
-        console.warn('CubeAPI.getCubeCount() は非推奨です。代わりに CubeAPIClient.getAllCubes() を使用してください。');
-        return cubes.length;
-    },
-    
-    // すべての立方体を取得
-    getAllCubes: function() {
-        console.warn('CubeAPI.getAllCubes() は非推奨です。代わりに CubeAPIClient.getAllCubes() を使用してください。');
-        return cubes;
+        
+        console.log(`${cubesData.length}個の立方体データを取得しました`);
+    } catch (error) {
+        console.error('立方体データの取得に失敗しました:', error);
     }
-};
+}
 
-// グローバルスコープでAPIを公開
-window.CubeAPI = CubeAPI;
-window.CubeAPIClient = CubeAPIClient;
+// APIから取得したデータに基づいて立方体を追加する関数
+function addCubeFromData(cubeData) {
+    // ジオメトリの作成
+    const geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);
+    
+    // マテリアルの作成
+    const material = new THREE.MeshStandardMaterial({
+        color: cubeData.color,
+        metalness: 0.3,
+        roughness: 0.4,
+    });
+    
+    // メッシュの作成
+    const cube = new THREE.Mesh(geometry, material);
+    
+    // 立方体の位置を設定
+    cube.position.x = cubeData.position.x;
+    cube.position.y = cubeData.position.y;
+    cube.position.z = cubeData.position.z;
+    
+    // 立方体の回転を設定
+    cube.rotation.x = cubeData.rotation.x;
+    cube.rotation.y = cubeData.rotation.y;
+    cube.rotation.z = cubeData.rotation.z;
+    
+    // APIから取得したIDを保存
+    cube.userData = { id: cubeData.id };
+    
+    // シーンに追加
+    scene.add(cube);
+    
+    // 配列に追加
+    cubes.push(cube);
+    
+    console.log(`立方体が追加されました。ID: ${cubeData.id}, 現在の立方体数: ${cubes.length}`);
+    
+    // 追加した立方体を返す
+    return cube;
+}
 
 // シーンの初期化
 function init() {
@@ -217,92 +144,65 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight - menuBarHeight);
 }
 
-// APIから取得したデータに基づいて立方体を追加する関数
-function addCubeFromData(cubeData) {
-    // ジオメトリの作成
-    const geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);
-    
-    // マテリアルの作成
-    const material = new THREE.MeshStandardMaterial({
-        color: cubeData.color,
-        metalness: 0.3,
-        roughness: 0.4,
-    });
-    
-    // メッシュの作成
-    const cube = new THREE.Mesh(geometry, material);
-    
-    // 立方体の位置を設定
-    cube.position.x = cubeData.position.x;
-    cube.position.y = cubeData.position.y;
-    cube.position.z = cubeData.position.z;
-    
-    // 立方体の回転を設定
-    cube.rotation.x = cubeData.rotation.x;
-    cube.rotation.y = cubeData.rotation.y;
-    cube.rotation.z = cubeData.rotation.z;
-    
-    // APIから取得したIDを保存
-    cube.userData.id = cubeData.id;
-    
-    // シーンに追加
-    scene.add(cube);
-    
-    // 配列に追加
-    cubes.push(cube);
-    
-    console.log(`立方体が追加されました。ID: ${cubeData.id}, 現在の立方体数: ${cubes.length}`);
-    
-    // 追加した立方体を返す
-    return cube;
-}
-
-// 設定に基づいて立方体を追加する内部関数（APIが利用できない場合のフォールバック）
-function addCubeWithConfig(config) {
-    // デフォルト値を設定
-    const cubeConfig = {
-        id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
-        size: config.size || cubeSize,
-        color: config.color || getRandomColor(),
-        position: config.position || {
-            x: Math.random() * 50 - 25,
-            y: Math.random() * 25 + 5,
-            z: Math.random() * 50 - 25
-        },
-        rotation: config.rotation || {
-            x: Math.random() * Math.PI,
-            y: Math.random() * Math.PI,
-            z: Math.random() * Math.PI
-        }
-    };
-    
-    return addCubeFromData(cubeConfig);
-}
-
 // UIボタンから呼び出される立方体追加関数
 async function addCube() {
-    // APIを使用して立方体を追加
     try {
-        return await CubeAPIClient.addCube();
+        // APIを使用して立方体を追加
+        const response = await fetch(`${API_BASE_URL}/cubes`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
+        
+        if (!response.ok) {
+            throw new Error(`APIエラー: ${response.status}`);
+        }
+        
+        const cubeData = await response.json();
+        return addCubeFromData(cubeData);
     } catch (error) {
         console.error('APIを使用した立方体の追加に失敗しました:', error);
+        
         // APIが失敗した場合はローカルで立方体を追加
-        return addCubeWithConfig({
-            size: cubeSize,
+        // ジオメトリの作成
+        const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+        
+        // マテリアルの作成（ランダムな色）
+        const material = new THREE.MeshStandardMaterial({
             color: getRandomColor(),
-            position: {
-                x: Math.random() * 50 - 25,
-                y: Math.random() * 25 + 5,
-                z: Math.random() * 50 - 25
-            },
-            rotation: {
-                x: Math.random() * Math.PI,
-                y: Math.random() * Math.PI,
-                z: Math.random() * Math.PI
-            }
+            metalness: 0.3,
+            roughness: 0.4,
         });
+        
+        // メッシュの作成
+        const cube = new THREE.Mesh(geometry, material);
+        
+        // 立方体の位置をランダムに設定
+        const range = 50;
+        cube.position.x = Math.random() * range - range / 2;
+        cube.position.y = Math.random() * range / 2 + cubeSize / 2; // 地面より上に配置
+        cube.position.z = Math.random() * range - range / 2;
+        
+        // 立方体を少し回転させる
+        cube.rotation.x = Math.random() * Math.PI;
+        cube.rotation.y = Math.random() * Math.PI;
+        cube.rotation.z = Math.random() * Math.PI;
+        
+        // シーンに追加
+        scene.add(cube);
+        
+        // 配列に追加
+        cubes.push(cube);
+        
+        console.log(`立方体が追加されました。現在の立方体数: ${cubes.length}`);
+        
+        // 追加した立方体を返す
+        return cube;
     }
 }
+
 
 // アニメーションループ
 function animate() {
@@ -322,9 +222,15 @@ function animate() {
 }
 
 // DOMが読み込まれたら初期化
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     init();
+    
+    // サーバーからすべての立方体データを取得して表示
+    await fetchAndDisplayCubes();
     
     // 「立方体を追加」ボタンのイベントリスナー
     document.getElementById('add-cube').addEventListener('click', addCube);
+    
+    // 定期的にサーバーから新しい立方体データを取得（5秒ごと）
+    setInterval(fetchAndDisplayCubes, 5000);
 });

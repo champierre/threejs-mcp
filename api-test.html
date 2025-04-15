@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js 立方体ジェネレーター API テスト</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .menu-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 1000;
+        }
+        
+        .menu-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .menu-items {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .container {
+            display: flex;
+            height: calc(100vh - 50px);
+        }
+        
+        #scene-container {
+            flex: 1;
+            background-color: #000;
+        }
+        
+        .control-panel {
+            width: 300px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+        
+        .control-section {
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        input, button {
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .info-panel {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        
+        #cube-count {
+            font-weight: bold;
+        }
+        
+        .color-preview {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            border: 1px solid #ccc;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-bar">
+        <div class="menu-title">Three.js 立方体ジェネレーター API テスト</div>
+        <div class="menu-items">
+            <button id="back-to-main">メインページに戻る</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div id="scene-container"></div>
+        
+        <div class="control-panel">
+            <div class="control-section">
+                <h2>立方体の追加</h2>
+                
+                <div>
+                    <label for="cube-size">サイズ:</label>
+                    <input type="number" id="cube-size" value="10" min="1" max="50">
+                </div>
+                
+                <div>
+                    <label for="cube-color">色 (16進数):</label>
+                    <input type="text" id="cube-color" value="ff0000">
+                    <span class="color-preview" id="color-preview" style="background-color: #ff0000;"></span>
+                </div>
+                
+                <h3>位置</h3>
+                <div>
+                    <label for="position-x">X:</label>
+                    <input type="number" id="position-x" value="0" step="1">
+                </div>
+                <div>
+                    <label for="position-y">Y:</label>
+                    <input type="number" id="position-y" value="10" step="1">
+                </div>
+                <div>
+                    <label for="position-z">Z:</label>
+                    <input type="number" id="position-z" value="0" step="1">
+                </div>
+                
+                <h3>回転 (ラジアン)</h3>
+                <div>
+                    <label for="rotation-x">X:</label>
+                    <input type="number" id="rotation-x" value="0" step="0.1">
+                </div>
+                <div>
+                    <label for="rotation-y">Y:</label>
+                    <input type="number" id="rotation-y" value="0" step="0.1">
+                </div>
+                <div>
+                    <label for="rotation-z">Z:</label>
+                    <input type="number" id="rotation-z" value="0" step="0.1">
+                </div>
+                
+                <button id="add-custom-cube">カスタム立方体を追加</button>
+                <button id="add-random-cube">ランダム立方体を追加</button>
+            </div>
+            
+            <div class="control-section">
+                <h2>立方体の操作</h2>
+                <button id="change-all-color">すべての立方体を緑色に変更</button>
+                <button id="rotate-all">すべての立方体を回転</button>
+            </div>
+            
+            <div class="info-panel">
+                <p>立方体の数: <span id="cube-count">0</span></p>
+                <p>最後に追加した立方体: <span id="last-cube-info">なし</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js ライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- メインスクリプト -->
+    <script src="script.js"></script>
+    
+    <script>
+        // 色のプレビュー更新
+        document.getElementById('cube-color').addEventListener('input', function() {
+            const colorValue = this.value;
+            document.getElementById('color-preview').style.backgroundColor = `#${colorValue}`;
+        });
+        
+        // メインページに戻るボタン
+        document.getElementById('back-to-main').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+        
+        // カスタム立方体を追加
+        document.getElementById('add-custom-cube').addEventListener('click', function() {
+            const size = parseFloat(document.getElementById('cube-size').value);
+            const colorHex = document.getElementById('cube-color').value;
+            const color = parseInt(colorHex, 16);
+            
+            const posX = parseFloat(document.getElementById('position-x').value);
+            const posY = parseFloat(document.getElementById('position-y').value);
+            const posZ = parseFloat(document.getElementById('position-z').value);
+            
+            const rotX = parseFloat(document.getElementById('rotation-x').value);
+            const rotY = parseFloat(document.getElementById('rotation-y').value);
+            const rotZ = parseFloat(document.getElementById('rotation-z').value);
+            
+            const cube = window.CubeAPI.addCube({
+                size: size,
+                color: color,
+                position: { x: posX, y: posY, z: posZ },
+                rotation: { x: rotX, y: rotY, z: rotZ }
+            });
+            
+            updateCubeInfo(cube);
+        });
+        
+        // ランダム立方体を追加
+        document.getElementById('add-random-cube').addEventListener('click', function() {
+            const cube = window.CubeAPI.addCube();
+            updateCubeInfo(cube);
+        });
+        
+        // すべての立方体を緑色に変更
+        document.getElementById('change-all-color').addEventListener('click', function() {
+            const allCubes = window.CubeAPI.getAllCubes();
+            allCubes.forEach(cube => {
+                cube.material.color.set(0x00ff00);
+            });
+        });
+        
+        // すべての立方体を回転
+        document.getElementById('rotate-all').addEventListener('click', function() {
+            const allCubes = window.CubeAPI.getAllCubes();
+            allCubes.forEach(cube => {
+                cube.rotation.x += Math.PI / 4;
+                cube.rotation.y += Math.PI / 4;
+            });
+        });
+        
+        // 立方体情報の更新
+        function updateCubeInfo(cube) {
+            document.getElementById('cube-count').textContent = window.CubeAPI.getCubeCount();
+            
+            const position = cube.position;
+            const rotation = cube.rotation;
+            const color = cube.material.color.getHex();
+            
+            document.getElementById('last-cube-info').textContent = 
+                `位置(${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)}), ` +
+                `色: #${color.toString(16).padStart(6, '0')}`;
+        }
+        
+        // 初期化時に立方体数を更新
+        document.addEventListener('DOMContentLoaded', () => {
+            // シーンが初期化されるまで少し待つ
+            setTimeout(() => {
+                document.getElementById('cube-count').textContent = window.CubeAPI.getCubeCount();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

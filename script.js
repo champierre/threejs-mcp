@@ -9,6 +9,43 @@ const getRandomColor = () => {
     return Math.floor(Math.random() * 16777215);
 };
 
+// APIオブジェクト - 外部からアクセス可能な関数を提供
+const CubeAPI = {
+    // 立方体を追加するAPIメソッド
+    addCube: function(options = {}) {
+        // オプションのデフォルト値を設定
+        const config = {
+            size: options.size || cubeSize,
+            color: options.color || getRandomColor(),
+            position: options.position || {
+                x: Math.random() * 50 - 25,
+                y: Math.random() * 25 + 5,
+                z: Math.random() * 50 - 25
+            },
+            rotation: options.rotation || {
+                x: Math.random() * Math.PI,
+                y: Math.random() * Math.PI,
+                z: Math.random() * Math.PI
+            }
+        };
+        
+        return addCubeWithConfig(config);
+    },
+    
+    // シーン内の立方体の数を取得
+    getCubeCount: function() {
+        return cubes.length;
+    },
+    
+    // すべての立方体を取得
+    getAllCubes: function() {
+        return cubes;
+    }
+};
+
+// グローバルスコープでAPIを公開
+window.CubeAPI = CubeAPI;
+
 // シーンの初期化
 function init() {
     // シーンの作成
@@ -68,14 +105,14 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight - menuBarHeight);
 }
 
-// 立方体を追加する関数
-function addCube() {
+// 設定に基づいて立方体を追加する内部関数
+function addCubeWithConfig(config) {
     // ジオメトリの作成
-    const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+    const geometry = new THREE.BoxGeometry(config.size, config.size, config.size);
     
-    // マテリアルの作成（ランダムな色）
+    // マテリアルの作成
     const material = new THREE.MeshStandardMaterial({
-        color: getRandomColor(),
+        color: config.color,
         metalness: 0.3,
         roughness: 0.4,
     });
@@ -83,16 +120,15 @@ function addCube() {
     // メッシュの作成
     const cube = new THREE.Mesh(geometry, material);
     
-    // 立方体の位置をランダムに設定
-    const range = 50;
-    cube.position.x = Math.random() * range - range / 2;
-    cube.position.y = Math.random() * range / 2 + cubeSize / 2; // 地面より上に配置
-    cube.position.z = Math.random() * range - range / 2;
+    // 立方体の位置を設定
+    cube.position.x = config.position.x;
+    cube.position.y = config.position.y;
+    cube.position.z = config.position.z;
     
-    // 立方体を少し回転させる
-    cube.rotation.x = Math.random() * Math.PI;
-    cube.rotation.y = Math.random() * Math.PI;
-    cube.rotation.z = Math.random() * Math.PI;
+    // 立方体の回転を設定
+    cube.rotation.x = config.rotation.x;
+    cube.rotation.y = config.rotation.y;
+    cube.rotation.z = config.rotation.z;
     
     // シーンに追加
     scene.add(cube);
@@ -101,6 +137,28 @@ function addCube() {
     cubes.push(cube);
     
     console.log(`立方体が追加されました。現在の立方体数: ${cubes.length}`);
+    
+    // 追加した立方体を返す
+    return cube;
+}
+
+// UIボタンから呼び出される立方体追加関数
+function addCube() {
+    // デフォルト設定で立方体を追加
+    return addCubeWithConfig({
+        size: cubeSize,
+        color: getRandomColor(),
+        position: {
+            x: Math.random() * 50 - 25,
+            y: Math.random() * 25 + 5,
+            z: Math.random() * 50 - 25
+        },
+        rotation: {
+            x: Math.random() * Math.PI,
+            y: Math.random() * Math.PI,
+            z: Math.random() * Math.PI
+        }
+    });
 }
 
 // アニメーションループ

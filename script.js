@@ -266,11 +266,7 @@ async function addCube() {
 function animate() {
     requestAnimationFrame(animate);
     
-    // 立方体を回転
-    cubes.forEach(cube => {
-        cube.rotation.x += 0.005;
-        cube.rotation.y += 0.01;
-    });
+    // 立方体の回転アニメーションは無効化
     
     // コントロールの更新
     controls.update();

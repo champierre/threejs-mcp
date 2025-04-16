@@ -87,14 +87,19 @@ server.tool("add-cube", "Add a new cube to the scene", {
             z: z.number().describe("Z rotation in radians")
         }).optional().describe("Rotation of the cube (default: random)")
     }).optional(),
-}, async (params) => {
+}, async (input) => {
     const url = `${API_BASE}/api/cubes`;
+    
+    // Clone the input to avoid modifying the original
+    const params = input ? JSON.parse(JSON.stringify(input)) : {};
     
     // Convert RGB color to decimal if provided
     if (params && params.color && typeof params.color === 'object' && 'r' in params.color) {
         const { r, g, b } = params.color;
         params.color = (r << 16) + (g << 8) + b;
     }
+    
+    console.error("Sending params to API:", JSON.stringify(params, null, 2));
     
     try {
         const response = await fetch(url, {

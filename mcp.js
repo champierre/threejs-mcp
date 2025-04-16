@@ -103,7 +103,7 @@ server.tool("add-cube", "Add a new cube to the scene", {
             content: [
                 {
                     type: "text",
-                    text: `立方体が追加されました。ID: ${cube.id}`,
+                    text: `Cube added successfully. ID: ${cube.id}`,
                 },
                 {
                     type: "text",
@@ -117,7 +117,7 @@ server.tool("add-cube", "Add a new cube to the scene", {
             content: [
                 {
                     type: "text",
-                    text: `立方体の追加に失敗しました: ${error.message}`,
+                    text: `Failed to add cube: ${error.message}`,
                 },
             ],
         };

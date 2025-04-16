@@ -98,6 +98,7 @@ const getRandomColor = () => {
 
 // 立方体を追加するAPIエンドポイント
 app.post('/api/cubes', (req, res) => {
+    console.log('Received request body:', JSON.stringify(req.body, null, 2));
     const options = req.body || {};
     
     // デフォルト値を設定

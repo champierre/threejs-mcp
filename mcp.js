@@ -64,6 +64,66 @@ server.tool("get-cubes", "Get all cubes", {}, async () => {
     };
 });
 
+// Add cube tool
+server.tool("add-cube", "Add a new cube to the scene", {
+    input: z.object({
+        size: z.number().optional().describe("Size of the cube (default: 10)"),
+        color: z.number().optional().describe("Color of the cube in decimal format (default: random)"),
+        position: z.object({
+            x: z.number().describe("X position"),
+            y: z.number().describe("Y position"),
+            z: z.number().describe("Z position")
+        }).optional().describe("Position of the cube (default: random)"),
+        rotation: z.object({
+            x: z.number().describe("X rotation in radians"),
+            y: z.number().describe("Y rotation in radians"),
+            z: z.number().describe("Z rotation in radians")
+        }).optional().describe("Rotation of the cube (default: random)")
+    }).optional(),
+}, async (params) => {
+    const url = `${API_BASE}/api/cubes`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(params || {})
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const cube = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `立方体が追加されました。ID: ${cube.id}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(cube, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error adding cube:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `立方体の追加に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 // Server start function
 async function main() {
     const transport = new StdioServerTransport();

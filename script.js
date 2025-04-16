@@ -111,9 +111,21 @@ function addCubeFromData(cubeData) {
     // ジオメトリの作成
     const geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);
     
+    // 色の処理
+    let color = cubeData.color;
+    // 色が数値であることを確認
+    if (typeof color !== 'number') {
+        console.error('Invalid color format:', color);
+        color = 0xffffff; // デフォルトは白
+    }
+    
+    // 色の値を16進数で表示（デバッグ用）
+    const hexColor = color.toString(16).padStart(6, '0');
+    console.log(`Creating cube with color: 0x${hexColor} (R:${parseInt(hexColor.substr(0,2), 16)}, G:${parseInt(hexColor.substr(2,2), 16)}, B:${parseInt(hexColor.substr(4,2), 16)})`);
+    
     // マテリアルの作成
     const material = new THREE.MeshStandardMaterial({
-        color: cubeData.color,
+        color: color,
         metalness: 0.3,
         roughness: 0.4,
     });
@@ -265,12 +277,6 @@ async function addCube() {
 // アニメーションループ
 function animate() {
     requestAnimationFrame(animate);
-    
-    // 立方体を回転
-    cubes.forEach(cube => {
-        cube.rotation.x += 0.005;
-        cube.rotation.y += 0.01;
-    });
     
     // コントロールの更新
     controls.update();

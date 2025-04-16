@@ -96,7 +96,9 @@ server.tool("add-cube", "Add a new cube to the scene", {
     // Convert RGB color to decimal if provided
     if (params && params.color && typeof params.color === 'object' && 'r' in params.color) {
         const { r, g, b } = params.color;
-        params.color = (r << 16) + (g << 8) + b;
+        // Convert RGB to hex color format (0xRRGGBB)
+        params.color = (r << 16) | (g << 8) | b;
+        console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${params.color.toString(16)}`);
     }
     
     console.error("Sending params to API:", JSON.stringify(params, null, 2));

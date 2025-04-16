@@ -111,9 +111,19 @@ function addCubeFromData(cubeData) {
     // ジオメトリの作成
     const geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);
     
+    // 色の処理
+    let color = cubeData.color;
+    // 色が数値であることを確認
+    if (typeof color !== 'number') {
+        console.error('Invalid color format:', color);
+        color = 0xffffff; // デフォルトは白
+    }
+    
+    console.log(`Creating cube with color: 0x${color.toString(16)}`);
+    
     // マテリアルの作成
     const material = new THREE.MeshStandardMaterial({
-        color: cubeData.color,
+        color: color,
         metalness: 0.3,
         roughness: 0.4,
     });

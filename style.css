@@ -26,6 +26,13 @@ body {
     z-index: 1; /* シーンコンテナは背面に */
 }
 
+.controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2; /* コントロールは前面に */
+}
+
 button {
     padding: 10px 20px;
     background-color: #4CAF50;

@@ -266,8 +266,6 @@ async function addCube() {
 function animate() {
     requestAnimationFrame(animate);
     
-    // 立方体の回転アニメーションは無効化
-    
     // コントロールの更新
     controls.update();
     

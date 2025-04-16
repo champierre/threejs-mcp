@@ -66,53 +66,51 @@ server.tool("get-cubes", "Get all cubes", {}, async () => {
 
 // Add cube tool
 server.tool("add-cube", "Add a new cube to the scene", {
-    input: z.object({
-        size: z.number().optional().describe("Size of the cube (default: 10)"),
-        color: z.union([
-            z.number().describe("Color of the cube in decimal format"),
-            z.object({
-                r: z.number().min(0).max(255).describe("Red component (0-255)"),
-                g: z.number().min(0).max(255).describe("Green component (0-255)"),
-                b: z.number().min(0).max(255).describe("Blue component (0-255)")
-            }).describe("Color in RGB format")
-        ]).optional().describe("Color of the cube (default: random)"),
-        position: z.object({
-            x: z.number().describe("X position"),
-            y: z.number().describe("Y position"),
-            z: z.number().describe("Z position")
-        }).optional().describe("Position of the cube (default: random)"),
-        rotation: z.object({
-            x: z.number().describe("X rotation in radians"),
-            y: z.number().describe("Y rotation in radians"),
-            z: z.number().describe("Z rotation in radians")
-        }).optional().describe("Rotation of the cube (default: random)")
-    }).optional(),
-}, async (input) => {
+    size: z.number().optional().describe("Size of the cube (default: 10)"),
+    color: z.union([
+        z.number().describe("Color of the cube in decimal format"),
+        z.object({
+            r: z.number().min(0).max(255).describe("Red component (0-255)"),
+            g: z.number().min(0).max(255).describe("Green component (0-255)"),
+            b: z.number().min(0).max(255).describe("Blue component (0-255)")
+        }).describe("Color in RGB format")
+    ]).optional().describe("Color of the cube (default: random)"),
+    position: z.object({
+        x: z.number().describe("X position"),
+        y: z.number().describe("Y position"),
+        z: z.number().describe("Z position")
+    }).optional().describe("Position of the cube (default: random)"),
+    rotation: z.object({
+        x: z.number().describe("X rotation in radians"),
+        y: z.number().describe("Y rotation in radians"),
+        z: z.number().describe("Z rotation in radians")
+    }).optional().describe("Rotation of the cube (default: random)")
+}, async (params) => {
     const url = `${API_BASE}/api/cubes`;
     
-    console.error("Received input:", JSON.stringify(input, null, 2));
+    console.error("Received params:", JSON.stringify(params, null, 2));
     
-    // Clone the input to avoid modifying the original
-    const params = input ? JSON.parse(JSON.stringify(input)) : {};
+    // Clone the params to avoid modifying the original
+    const paramsClone = params ? JSON.parse(JSON.stringify(params)) : {};
     
-    // Debug the input structure
-    console.error("Input structure:", JSON.stringify(input, null, 2));
+    // Debug the params structure
+    console.error("Params structure:", JSON.stringify(params, null, 2));
     
     // Ensure color is properly set
-    if (params && params.color) {
-        if (typeof params.color === 'object' && 'r' in params.color) {
-            const { r, g, b } = params.color;
+    if (paramsClone && paramsClone.color) {
+        if (typeof paramsClone.color === 'object' && 'r' in paramsClone.color) {
+            const { r, g, b } = paramsClone.color;
             // Convert RGB to hex color format (0xRRGGBB)
             const hexColor = (r << 16) | (g << 8) | b;
             console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${hexColor.toString(16)}`);
-            params.color = hexColor;
+            paramsClone.color = hexColor;
         } else {
-            console.error(`Using provided color: ${params.color}`);
+            console.error(`Using provided color: ${paramsClone.color}`);
         }
     }
     // Do not set a default color, let the server handle it
     
-    console.error("Sending params to API:", JSON.stringify(params, null, 2));
+    console.error("Sending params to API:", JSON.stringify(paramsClone, null, 2));
     
     try {
         const response = await fetch(url, {
@@ -121,7 +119,7 @@ server.tool("add-cube", "Add a new cube to the scene", {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify(params || {})
+            body: JSON.stringify(paramsClone || {})
         });
         
         if (!response.ok) {

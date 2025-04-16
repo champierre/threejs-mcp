@@ -68,7 +68,14 @@ server.tool("get-cubes", "Get all cubes", {}, async () => {
 server.tool("add-cube", "Add a new cube to the scene", {
     input: z.object({
         size: z.number().optional().describe("Size of the cube (default: 10)"),
-        color: z.number().optional().describe("Color of the cube in decimal format (default: random)"),
+        color: z.union([
+            z.number().describe("Color of the cube in decimal format"),
+            z.object({
+                r: z.number().min(0).max(255).describe("Red component (0-255)"),
+                g: z.number().min(0).max(255).describe("Green component (0-255)"),
+                b: z.number().min(0).max(255).describe("Blue component (0-255)")
+            }).describe("Color in RGB format")
+        ]).optional().describe("Color of the cube (default: random)"),
         position: z.object({
             x: z.number().describe("X position"),
             y: z.number().describe("Y position"),
@@ -82,6 +89,12 @@ server.tool("add-cube", "Add a new cube to the scene", {
     }).optional(),
 }, async (params) => {
     const url = `${API_BASE}/api/cubes`;
+    
+    // Convert RGB color to decimal if provided
+    if (params && params.color && typeof params.color === 'object' && 'r' in params.color) {
+        const { r, g, b } = params.color;
+        params.color = (r << 16) + (g << 8) + b;
+    }
     
     try {
         const response = await fetch(url, {

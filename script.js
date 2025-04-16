@@ -285,10 +285,36 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+// STLファイルとしてエクスポートする関数
+function exportToSTL() {
+    // STLExporterのインスタンスを作成
+    const exporter = new THREE.STLExporter();
+    
+    // シーン内のオブジェクトをSTL形式にエクスポート（バイナリ形式）
+    const result = exporter.parse(scene, { binary: true });
+    
+    // Blobオブジェクトを作成
+    const blob = new Blob([result], { type: 'application/octet-stream' });
+    
+    // ダウンロードリンクを作成
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'scene.stl';
+    link.click();
+    
+    // URLオブジェクトを解放
+    URL.revokeObjectURL(link.href);
+    
+    console.log('シーンがSTLファイルとしてエクスポートされました');
+}
+
 // DOMが読み込まれたら初期化
 document.addEventListener('DOMContentLoaded', () => {
     init();
     
     // WebSocketの初期化
     initWebSocket();
+    
+    // STLエクスポートボタンのイベントリスナーを設定
+    document.getElementById('export-stl-btn').addEventListener('click', exportToSTL);
 });

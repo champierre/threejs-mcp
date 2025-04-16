@@ -95,21 +95,22 @@ server.tool("add-cube", "Add a new cube to the scene", {
     // Clone the input to avoid modifying the original
     const params = input ? JSON.parse(JSON.stringify(input)) : {};
     
+    // Debug the input structure
+    console.error("Input structure:", JSON.stringify(input, null, 2));
+    
     // Ensure color is properly set
     if (params && params.color) {
         if (typeof params.color === 'object' && 'r' in params.color) {
             const { r, g, b } = params.color;
             // Convert RGB to hex color format (0xRRGGBB)
-            params.color = (r << 16) | (g << 8) | b;
-            console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${params.color.toString(16)}`);
+            const hexColor = (r << 16) | (g << 8) | b;
+            console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${hexColor.toString(16)}`);
+            params.color = hexColor;
         } else {
             console.error(`Using provided color: ${params.color}`);
         }
-    } else {
-        // Force a specific color if none provided
-        params.color = 0xFF0000; // Red color
-        console.error(`No color provided, using default red: 0x${params.color.toString(16)}`);
     }
+    // Do not set a default color, let the server handle it
     
     console.error("Sending params to API:", JSON.stringify(params, null, 2));
     

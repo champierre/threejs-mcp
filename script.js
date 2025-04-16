@@ -119,7 +119,9 @@ function addCubeFromData(cubeData) {
         color = 0xffffff; // デフォルトは白
     }
     
-    console.log(`Creating cube with color: 0x${color.toString(16)}`);
+    // 色の値を16進数で表示（デバッグ用）
+    const hexColor = color.toString(16).padStart(6, '0');
+    console.log(`Creating cube with color: 0x${hexColor} (R:${parseInt(hexColor.substr(0,2), 16)}, G:${parseInt(hexColor.substr(2,2), 16)}, B:${parseInt(hexColor.substr(4,2), 16)})`);
     
     // マテリアルの作成
     const material = new THREE.MeshStandardMaterial({

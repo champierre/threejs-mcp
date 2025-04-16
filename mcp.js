@@ -150,6 +150,94 @@ server.tool("add-cube", "Add a new cube to the scene", {
     }
 });
 
+// Remove cube tool
+server.tool("remove-cube", "Remove a cube from the scene by ID", {
+    id: z.number().describe("ID of the cube to remove")
+}, async (params) => {
+    const url = `${API_BASE}/api/cubes/${params.id}`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Cube removed successfully. ID: ${params.id}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(result, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error removing cube:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Failed to remove cube: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
+// Remove all cubes tool
+server.tool("remove-all-cubes", "Remove all cubes from the scene", {}, async () => {
+    const url = `${API_BASE}/api/cubes`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: "All cubes removed successfully.",
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(result, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error removing all cubes:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Failed to remove all cubes: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 // Server start function
 async function main() {
     const transport = new StdioServerTransport();

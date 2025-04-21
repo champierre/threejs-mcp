@@ -197,6 +197,65 @@
                 <pre id="add-response-text"></pre>
             </div>
         </div>
+
+        <div class="card">
+            <h2>正n角柱を追加</h2>
+            <div class="form-group">
+                <label for="prism-radius">底面の半径:</label>
+                <input type="number" id="prism-radius" value="5" min="1" max="50">
+            </div>
+            
+            <div class="form-group">
+                <label for="prism-height">高さ:</label>
+                <input type="number" id="prism-height" value="10" min="1" max="50">
+            </div>
+            
+            <div class="form-group">
+                <label for="prism-segments">底面の角の数:</label>
+                <input type="number" id="prism-segments" value="6" min="3" max="32">
+            </div>
+            
+            <div class="form-group">
+                <label for="prism-color">色 (16進数):</label>
+                <input type="text" id="prism-color" value="00ff00">
+            </div>
+            
+            <h3>位置</h3>
+            <div class="form-group">
+                <label for="prism-position-x">X:</label>
+                <input type="number" id="prism-position-x" value="0" step="1">
+            </div>
+            <div class="form-group">
+                <label for="prism-position-y">Y:</label>
+                <input type="number" id="prism-position-y" value="10" step="1">
+            </div>
+            <div class="form-group">
+                <label for="prism-position-z">Z:</label>
+                <input type="number" id="prism-position-z" value="0" step="1">
+            </div>
+            
+            <h3>回転 (ラジアン)</h3>
+            <div class="form-group">
+                <label for="prism-rotation-x">X:</label>
+                <input type="number" id="prism-rotation-x" value="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="prism-rotation-y">Y:</label>
+                <input type="number" id="prism-rotation-y" value="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="prism-rotation-z">Z:</label>
+                <input type="number" id="prism-rotation-z" value="0" step="0.1">
+            </div>
+            
+            <button id="add-prism">正n角柱を追加</button>
+            <button id="add-random-prism">ランダム正n角柱を追加</button>
+            
+            <div id="add-prism-response" class="response" style="display: none;">
+                <h3>レスポンス:</h3>
+                <pre id="add-prism-response-text"></pre>
+            </div>
+        </div>
         
         <div class="card">
             <h2>立方体リスト</h2>
@@ -487,6 +546,174 @@
                     <div>
                         <span class="cube-color" style="background-color: #${colorHex};"></span>
                         ID: ${cube.id}, サイズ: ${cube.size}
+                    </div>
+                    <div class="cube-actions">
+                        <button class="view-cube" data-id="${cube.id}">詳細</button>
+                        <button class="delete-cube" data-id="${cube.id}">削除</button>
+                    </div>
+                `;
+                
+                cubeList.appendChild(li);
+            });
+            
+            // 詳細ボタンのイベントリスナーを追加
+            document.querySelectorAll('.view-cube').forEach(button => {
+                button.addEventListener('click', function() {
+                    const cubeId = this.getAttribute('data-id');
+                    document.getElementById('get-cube-id').value = cubeId;
+                    document.getElementById('get-cube').click();
+                });
+            });
+            
+            // 削除ボタンのイベントリスナーを追加
+            document.querySelectorAll('.delete-cube').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const cubeId = this.getAttribute('data-id');
+                    
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/cubes/${cubeId}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        const responseData = await response.json();
+                        
+                        const responseElement = document.getElementById('list-response');
+                        const responseTextElement = document.getElementById('list-response-text');
+                        
+                        responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                        responseElement.style.display = 'block';
+                        responseElement.classList.remove('error');
+                        
+                        // 立方体リストを更新
+                        fetchAllCubes();
+                    } catch (error) {
+                        const responseElement = document.getElementById('list-response');
+                        const responseTextElement = document.getElementById('list-response-text');
+                        
+                        responseTextElement.textContent = `エラー: ${error.message}`;
+                        responseElement.style.display = 'block';
+                        responseElement.classList.add('error');
+                    }
+                });
+            });
+        }
+        
+        // 正n角柱を追加ボタン
+        document.getElementById('add-prism').addEventListener('click', async function() {
+            const radius = parseFloat(document.getElementById('prism-radius').value);
+            const height = parseFloat(document.getElementById('prism-height').value);
+            const segments = parseInt(document.getElementById('prism-segments').value);
+            const colorHex = document.getElementById('prism-color').value;
+            const color = parseInt(colorHex, 16);
+            
+            const posX = parseFloat(document.getElementById('prism-position-x').value);
+            const posY = parseFloat(document.getElementById('prism-position-y').value);
+            const posZ = parseFloat(document.getElementById('prism-position-z').value);
+            
+            const rotX = parseFloat(document.getElementById('prism-rotation-x').value);
+            const rotY = parseFloat(document.getElementById('prism-rotation-y').value);
+            const rotZ = parseFloat(document.getElementById('prism-rotation-z').value);
+            
+            const prismData = {
+                radius: radius,
+                height: height,
+                segments: segments,
+                color: color,
+                position: { x: posX, y: posY, z: posZ },
+                rotation: { x: rotX, y: rotY, z: rotZ }
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/prisms`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(prismData)
+                });
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('add-prism-response');
+                const responseTextElement = document.getElementById('add-prism-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+                
+                // 立方体リストを更新
+                fetchAllCubes();
+            } catch (error) {
+                const responseElement = document.getElementById('add-prism-response');
+                const responseTextElement = document.getElementById('add-prism-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
+        
+        // ランダム正n角柱を追加ボタン
+        document.getElementById('add-random-prism').addEventListener('click', async function() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/prisms`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('add-prism-response');
+                const responseTextElement = document.getElementById('add-prism-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+                
+                // 立方体リストを更新
+                fetchAllCubes();
+            } catch (error) {
+                const responseElement = document.getElementById('add-prism-response');
+                const responseTextElement = document.getElementById('add-prism-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
+
+        // 立方体リストを更新する関数
+        function updateCubeList(cubes) {
+            const cubeList = document.getElementById('cube-list');
+            cubeList.innerHTML = '';
+            
+            if (cubes.length === 0) {
+                cubeList.innerHTML = '<li>オブジェクトがありません</li>';
+                return;
+            }
+            
+            cubes.forEach(cube => {
+                const li = document.createElement('li');
+                li.className = 'cube-item';
+                
+                const colorHex = cube.color.toString(16).padStart(6, '0');
+                
+                // オブジェクトのタイプに応じて表示を変更
+                let objectType = '立方体';
+                let sizeInfo = `サイズ: ${cube.size}`;
+                
+                if (cube.type === 'prism') {
+                    objectType = `正${cube.segments}角柱`;
+                    sizeInfo = `半径: ${cube.radius}, 高さ: ${cube.height}`;
+                }
+                
+                li.innerHTML = `
+                    <div>
+                        <span class="cube-color" style="background-color: #${colorHex};"></span>
+                        ID: ${cube.id}, タイプ: ${objectType}, ${sizeInfo}
                     </div>
                     <div class="cube-actions">
                         <button class="view-cube" data-id="${cube.id}">詳細</button>

@@ -164,6 +164,28 @@ remove-all-cubes
 
 シーン内のすべての立体を削除します。パラメータは必要ありません。
 
+## Claude での設定方法
+
+このMCPサーバーをClaudeで使用するには、以下の設定をClaudeの設定ファイルに追加してください。
+
+```json
+{
+  "mcpServers": {
+    "threejs-mcp": {
+      "command": "<nodeのフルパス>",
+      "args": [
+        "<threejs-mcp のパス>/mcp.js"
+      ]
+    }
+  }
+}
+```
+
+- `<nodeのフルパス>`: Nodeのインストールパスを指定します（例: `/usr/local/bin/node`）
+- `<threejs-mcp のパス>`: このリポジトリをクローンしたディレクトリのパスを指定します
+
+設定後、Claudeを再起動すると、Three.js MCPサーバーを通じて3Dオブジェクトの操作が可能になります。
+
 ## HTTP API
 
 このアプリケーションは、外部からアクセスできるHTTP APIを提供しています。すべてのAPI操作はデータファイルに永続化され、WebSocketを通じてリアルタイムに通知されます。

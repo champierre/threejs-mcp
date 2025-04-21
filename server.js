@@ -104,6 +104,7 @@ app.post('/api/cubes', (req, res) => {
     // デフォルト値を設定
     const cube = {
         id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
+        type: 'cube', // オブジェクトのタイプを指定
         size: options.size || 10,
         color: options.color || getRandomColor(),
         position: options.position || {
@@ -134,6 +135,49 @@ app.post('/api/cubes', (req, res) => {
     
     // 追加した立方体を返す
     res.status(201).json(cube);
+});
+
+// 正n角柱を追加するAPIエンドポイント
+app.post('/api/prisms', (req, res) => {
+    console.log('Received prism request body:', JSON.stringify(req.body, null, 2));
+    const options = req.body || {};
+    
+    // デフォルト値を設定
+    const prism = {
+        id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
+        type: 'prism', // オブジェクトのタイプを指定
+        radius: options.radius || 5, // 底面の半径
+        height: options.height || 10, // 高さ
+        segments: options.segments || 6, // 底面の角の数（デフォルトは6角形）
+        color: options.color || getRandomColor(),
+        position: options.position || {
+            x: Math.random() * 50 - 25,
+            y: Math.random() * 25 + 5,
+            z: Math.random() * 50 - 25
+        },
+        rotation: options.rotation || {
+            x: Math.random() * Math.PI,
+            y: Math.random() * Math.PI,
+            z: Math.random() * Math.PI
+        }
+    };
+    
+    // 正n角柱を配列に追加（同じcubes配列を使用）
+    cubes.push(prism);
+    
+    // データをファイルに保存
+    saveCubesData();
+    
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'add',
+        cube: prism
+    });
+    
+    console.log(`正${prism.segments}角柱が追加されました。ID: ${prism.id}, 現在のオブジェクト数: ${cubes.length}`);
+    
+    // 追加した正n角柱を返す
+    res.status(201).json(prism);
 });
 
 // すべての立方体を取得するAPIエンドポイント

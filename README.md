@@ -6,10 +6,10 @@
 
 - ボタンをクリックすると、シーンに10x10x10の立方体が追加されます
 - マウスでカメラを操作して、3Dシーンを自由に見ることができます
-- HTTP APIを使用して、外部から立方体を追加・管理できます
+- HTTP APIを使用して、外部から立方体、正n角柱、球体を追加・管理できます
 - 追加されたオブジェクトの情報はJSONファイルに永続化されます
 - WebSocketを使用してリアルタイムに変更が反映されます
-- MCPサーバーを通じて立方体の取得や追加を行うことができます
+- MCPサーバーを通じて立方体、正n角柱、球体の取得や追加を行うことができます
 - シーン内のオブジェクトをSTLファイルとしてエクスポートできます
 
 ## 使用技術
@@ -118,6 +118,41 @@ remove-cube
 ```json
 {
   "id": 1618456789012
+}
+```
+
+### 正n角柱の追加
+
+```
+add-prism
+```
+
+新しい正n角柱をシーンに追加します。以下のパラメータを指定できます：
+
+- `radius`: 底面の半径（デフォルト: 5）
+- `height`: 高さ（デフォルト: 10）
+- `segments`: 底面の角の数（最小: 3、デフォルト: 6）
+- `color`: 正n角柱の色（デフォルト: ランダム）
+  - 10進数形式: 例 `16711680`（赤色）
+  - RGB形式: 例 `{ "r": 255, "g": 0, "b": 0 }`（赤色）
+- `position`: 正n角柱の位置（デフォルト: ランダム）
+  - `x`: X座標
+  - `y`: Y座標
+  - `z`: Z座標
+- `rotation`: 正n角柱の回転（ラジアン単位、デフォルト: ランダム）
+  - `x`: X軸周りの回転
+  - `y`: Y軸周りの回転
+  - `z`: Z軸周りの回転
+
+例（RGB形式での色指定）：
+```json
+{
+  "radius": 5,
+  "height": 15,
+  "segments": 8,
+  "color": { "r": 0, "g": 255, "b": 0 },
+  "position": { "x": 10, "y": 5, "z": 10 },
+  "rotation": { "x": 0, "y": 0.5, "z": 0 }
 }
 ```
 
@@ -240,6 +275,301 @@ curl -X DELETE http://localhost:3000/api/cubes/1618456789012
 ```json
 {
   "message": "立方体が削除されました"
+}
+```
+
+### 正n角柱の追加
+
+```
+POST /api/prisms
+```
+
+curlコマンド例:
+```bash
+curl -X POST http://localhost:3000/api/prisms \
+  -H "Content-Type: application/json" \
+  -d '{
+    "radius": 5,
+    "height": 15,
+    "segments": 8,
+    "color": 65280,
+    "position": { "x": 10, "y": 5, "z": 10 },
+    "rotation": { "x": 0, "y": 0.5, "z": 0 }
+  }'
+```
+
+リクエスト例:
+```json
+{
+  "radius": 5,
+  "height": 15,
+  "segments": 8,
+  "color": 65280,
+  "position": { "x": 10, "y": 5, "z": 10 },
+  "rotation": { "x": 0, "y": 0.5, "z": 0 }
+}
+```
+
+レスポンス例:
+```json
+{
+  "id": 1618456789014,
+  "type": "prism",
+  "radius": 5,
+  "height": 15,
+  "segments": 8,
+  "color": 65280,
+  "position": { "x": 10, "y": 5, "z": 10 },
+  "rotation": { "x": 0, "y": 0.5, "z": 0 }
+}
+```
+
+### 球体の追加
+
+```
+add-sphere
+```
+
+新しい球体をシーンに追加します。以下のパラメータを指定できます：
+
+- `radius`: 球体の半径（デフォルト: 5）
+- `widthSegments`: 横方向の分割数（デフォルト: 32）
+- `heightSegments`: 縦方向の分割数（デフォルト: 16）
+- `color`: 球体の色（デフォルト: ランダム）
+  - 10進数形式: 例 `255`（青色）
+  - RGB形式: 例 `{ "r": 0, "g": 0, "b": 255 }`（青色）
+- `position`: 球体の位置（デフォルト: ランダム）
+  - `x`: X座標
+  - `y`: Y座標
+  - `z`: Z座標
+- `rotation`: 球体の回転（ラジアン単位、デフォルト: ランダム）
+  - `x`: X軸周りの回転
+  - `y`: Y軸周りの回転
+  - `z`: Z軸周りの回転
+
+例（RGB形式での色指定）：
+```json
+{
+  "radius": 8,
+  "widthSegments": 32,
+  "heightSegments": 16,
+  "color": { "r": 0, "g": 0, "b": 255 },
+  "position": { "x": -10, "y": 8, "z": 5 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
+### すべての立方体の削除
+
+```
+remove-all-cubes
+```
+
+シーン内のすべての立方体を削除します。パラメータは必要ありません。
+
+## HTTP API
+
+このアプリケーションは、外部からアクセスできるHTTP APIを提供しています。すべてのAPI操作はデータファイルに永続化され、WebSocketを通じてリアルタイムに通知されます。
+
+### 立方体の追加
+
+```
+POST /api/cubes
+```
+
+curlコマンド例:
+```bash
+curl -X POST http://localhost:3000/api/cubes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "size": 15,
+    "color": 16711680,
+    "position": { "x": 0, "y": 10, "z": 0 },
+    "rotation": { "x": 0, "y": 0, "z": 0 }
+  }'
+```
+
+リクエスト例:
+```json
+{
+  "size": 15,
+  "color": 16711680,
+  "position": { "x": 0, "y": 10, "z": 0 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
+レスポンス例:
+```json
+{
+  "id": 1618456789012,
+  "size": 15,
+  "color": 16711680,
+  "position": { "x": 0, "y": 10, "z": 0 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
+### すべての立方体を取得
+
+```
+GET /api/cubes
+```
+
+curlコマンド例:
+```bash
+curl -X GET http://localhost:3000/api/cubes
+```
+
+レスポンス例:
+```json
+[
+  {
+    "id": 1618456789012,
+    "size": 15,
+    "color": 16711680,
+    "position": { "x": 0, "y": 10, "z": 0 },
+    "rotation": { "x": 0, "y": 0, "z": 0 }
+  },
+  {
+    "id": 1618456789013,
+    "size": 10,
+    "color": 65280,
+    "position": { "x": 10, "y": 5, "z": -5 },
+    "rotation": { "x": 0.5, "y": 0.3, "z": 0.1 }
+  }
+]
+```
+
+### 特定の立方体を取得
+
+```
+GET /api/cubes/:id
+```
+
+curlコマンド例:
+```bash
+curl -X GET http://localhost:3000/api/cubes/1618456789012
+```
+
+レスポンス例:
+```json
+{
+  "id": 1618456789012,
+  "size": 15,
+  "color": 16711680,
+  "position": { "x": 0, "y": 10, "z": 0 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
+### 特定の立方体を削除
+
+```
+DELETE /api/cubes/:id
+```
+
+curlコマンド例:
+```bash
+curl -X DELETE http://localhost:3000/api/cubes/1618456789012
+```
+
+レスポンス例:
+```json
+{
+  "message": "立方体が削除されました"
+}
+```
+
+### 正n角柱の追加
+
+```
+POST /api/prisms
+```
+
+curlコマンド例:
+```bash
+curl -X POST http://localhost:3000/api/prisms \
+  -H "Content-Type: application/json" \
+  -d '{
+    "radius": 5,
+    "height": 15,
+    "segments": 8,
+    "color": 65280,
+    "position": { "x": 10, "y": 5, "z": 10 },
+    "rotation": { "x": 0, "y": 0.5, "z": 0 }
+  }'
+```
+
+リクエスト例:
+```json
+{
+  "radius": 5,
+  "height": 15,
+  "segments": 8,
+  "color": 65280,
+  "position": { "x": 10, "y": 5, "z": 10 },
+  "rotation": { "x": 0, "y": 0.5, "z": 0 }
+}
+```
+
+レスポンス例:
+```json
+{
+  "id": 1618456789014,
+  "type": "prism",
+  "radius": 5,
+  "height": 15,
+  "segments": 8,
+  "color": 65280,
+  "position": { "x": 10, "y": 5, "z": 10 },
+  "rotation": { "x": 0, "y": 0.5, "z": 0 }
+}
+```
+
+### 球体の追加
+
+```
+POST /api/spheres
+```
+
+curlコマンド例:
+```bash
+curl -X POST http://localhost:3000/api/spheres \
+  -H "Content-Type: application/json" \
+  -d '{
+    "radius": 8,
+    "widthSegments": 32,
+    "heightSegments": 16,
+    "color": 255,
+    "position": { "x": -10, "y": 8, "z": 5 },
+    "rotation": { "x": 0, "y": 0, "z": 0 }
+  }'
+```
+
+リクエスト例:
+```json
+{
+  "radius": 8,
+  "widthSegments": 32,
+  "heightSegments": 16,
+  "color": 255,
+  "position": { "x": -10, "y": 8, "z": 5 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
+レスポンス例:
+```json
+{
+  "id": 1618456789015,
+  "type": "sphere",
+  "radius": 8,
+  "widthSegments": 32,
+  "heightSegments": 16,
+  "color": 255,
+  "position": { "x": -10, "y": 8, "z": 5 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
 }
 ```
 

@@ -123,6 +123,14 @@ function addCubeFromData(cubeData) {
             false             // 開いた円柱にするかどうか
         );
         objectType = `正${cubeData.segments}角柱`;
+    } else if (cubeData.type === 'sphere') {
+        // 球体の場合
+        geometry = new THREE.SphereGeometry(
+            cubeData.radius,         // 半径
+            cubeData.widthSegments,  // 横方向の分割数
+            cubeData.heightSegments  // 縦方向の分割数
+        );
+        objectType = `球体`;
     } else {
         // デフォルトは立方体
         geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);

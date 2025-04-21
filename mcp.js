@@ -30,7 +30,7 @@ async function makeRequest(url) {
     }
 }
 // Define tools
-server.tool("get-cubes", "Get all cubes", {}, async () => {
+server.tool("get-cubes", "すべての立体を取得", {}, async () => {
     const url = `${API_BASE}/api/cubes`;
     const response = await makeRequest(url);
     if (!response) {
@@ -38,7 +38,7 @@ server.tool("get-cubes", "Get all cubes", {}, async () => {
             content: [
                 {
                     type: "text",
-                    text: "Failed to get cubes data",
+                    text: "立体データの取得に失敗しました",
                 },
             ],
         };
@@ -48,7 +48,7 @@ server.tool("get-cubes", "Get all cubes", {}, async () => {
             content: [
                 {
                     type: "text",
-                    text: "No results"
+                    text: "結果がありません"
                 },
             ],
         };
@@ -65,7 +65,7 @@ server.tool("get-cubes", "Get all cubes", {}, async () => {
 });
 
 // Add cube tool
-server.tool("add-cube", "Add a new cube to the scene", {
+server.tool("add-cube", "新しい立方体をシーンに追加", {
     size: z.number().optional().describe("Size of the cube (default: 10)"),
     color: z.object({
         r: z.number().min(0).max(255).describe("Red component (0-255)"),
@@ -129,7 +129,7 @@ server.tool("add-cube", "Add a new cube to the scene", {
             content: [
                 {
                     type: "text",
-                    text: `Cube added successfully. ID: ${cube.id}`,
+                    text: `立方体が追加されました。ID: ${cube.id}`,
                 },
                 {
                     type: "text",
@@ -143,7 +143,7 @@ server.tool("add-cube", "Add a new cube to the scene", {
             content: [
                 {
                     type: "text",
-                    text: `Failed to add cube: ${error.message}`,
+                    text: `立方体の追加に失敗しました: ${error.message}`,
                 },
             ],
         };
@@ -151,7 +151,7 @@ server.tool("add-cube", "Add a new cube to the scene", {
 });
 
 // Add regular prism tool
-server.tool("add-prism", "Add a regular prism to the scene", {
+server.tool("add-prism", "新しい正n角柱をシーンに追加", {
     radius: z.number().optional().describe("Radius of the prism base (default: 5)"),
     height: z.number().optional().describe("Height of the prism (default: 10)"),
     segments: z.number().min(3).optional().describe("Number of sides of the prism base (min: 3, default: 6)"),
@@ -228,7 +228,91 @@ server.tool("add-prism", "Add a regular prism to the scene", {
             content: [
                 {
                     type: "text",
-                    text: `Failed to add prism: ${error.message}`,
+                    text: `正n角柱の追加に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
+// Add sphere tool
+server.tool("add-sphere", "新しい球体をシーンに追加", {
+    radius: z.number().optional().describe("Radius of the sphere (default: 5)"),
+    widthSegments: z.number().optional().describe("Number of horizontal segments (default: 32)"),
+    heightSegments: z.number().optional().describe("Number of vertical segments (default: 16)"),
+    color: z.object({
+        r: z.number().min(0).max(255).describe("Red component (0-255)"),
+        g: z.number().min(0).max(255).describe("Green component (0-255)"),
+        b: z.number().min(0).max(255).describe("Blue component (0-255)")
+    }).optional().describe("Color(RGB format) of the sphere (default: random)"),
+    position: z.object({
+        x: z.number().describe("X position"),
+        y: z.number().describe("Y position"),
+        z: z.number().describe("Z position")
+    }).optional().describe("Position of the sphere (default: random)"),
+    rotation: z.object({
+        x: z.number().describe("X rotation in radians"),
+        y: z.number().describe("Y rotation in radians"),
+        z: z.number().describe("Z rotation in radians")
+    }).optional().describe("Rotation of the sphere (default: random)")
+}, async (params) => {
+    const url = `${API_BASE}/api/spheres`;
+    
+    console.error("Received sphere params:", JSON.stringify(params, null, 2));
+    
+    // Clone the params to avoid modifying the original
+    const paramsClone = params ? JSON.parse(JSON.stringify(params)) : {};
+    
+    // Ensure color is properly set
+    if (paramsClone && paramsClone.color) {
+        if (typeof paramsClone.color === 'object' && 'r' in paramsClone.color) {
+            const { r, g, b } = paramsClone.color;
+            // Convert RGB to hex color format (0xRRGGBB)
+            const hexColor = (r << 16) | (g << 8) | b;
+            console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${hexColor.toString(16)}`);
+            paramsClone.color = hexColor;
+        } else {
+            console.error(`Using provided color: ${paramsClone.color}`);
+        }
+    }
+    
+    console.error("Sending sphere params to API:", JSON.stringify(paramsClone, null, 2));
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(paramsClone || {})
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const sphere = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `球体が追加されました。ID: ${sphere.id}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(sphere, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error adding sphere:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `球体の追加に失敗しました: ${error.message}`,
                 },
             ],
         };
@@ -236,8 +320,8 @@ server.tool("add-prism", "Add a regular prism to the scene", {
 });
 
 // Remove cube tool
-server.tool("remove-cube", "Remove a cube from the scene by ID", {
-    id: z.number().describe("ID of the cube to remove")
+server.tool("remove-cube", "IDを指定して立体をシーンから削除", {
+    id: z.number().describe("ID of the object to remove")
 }, async (params) => {
     const url = `${API_BASE}/api/cubes/${params.id}`;
     
@@ -259,7 +343,7 @@ server.tool("remove-cube", "Remove a cube from the scene by ID", {
             content: [
                 {
                     type: "text",
-                    text: `Cube removed successfully. ID: ${params.id}`,
+                    text: `立体が削除されました。ID: ${params.id}`,
                 },
                 {
                     type: "text",
@@ -273,7 +357,7 @@ server.tool("remove-cube", "Remove a cube from the scene by ID", {
             content: [
                 {
                     type: "text",
-                    text: `Failed to remove cube: ${error.message}`,
+                    text: `立体の削除に失敗しました: ${error.message}`,
                 },
             ],
         };
@@ -281,7 +365,7 @@ server.tool("remove-cube", "Remove a cube from the scene by ID", {
 });
 
 // Remove all cubes tool
-server.tool("remove-all-cubes", "Remove all cubes from the scene", {}, async () => {
+server.tool("remove-all-cubes", "すべての立体をシーンから削除", {}, async () => {
     const url = `${API_BASE}/api/cubes`;
     
     try {
@@ -302,7 +386,7 @@ server.tool("remove-all-cubes", "Remove all cubes from the scene", {}, async () 
             content: [
                 {
                     type: "text",
-                    text: "All cubes removed successfully.",
+                    text: "すべての立体が削除されました。",
                 },
                 {
                     type: "text",
@@ -316,7 +400,7 @@ server.tool("remove-all-cubes", "Remove all cubes from the scene", {}, async () 
             content: [
                 {
                     type: "text",
-                    text: `Failed to remove all cubes: ${error.message}`,
+                    text: `すべての立体の削除に失敗しました: ${error.message}`,
                 },
             ],
         };

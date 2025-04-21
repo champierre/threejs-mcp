@@ -143,7 +143,7 @@
 <body>
     <div class="nav-buttons">
         <button id="back-to-main">メインページに戻る</button>
-        <button id="refresh-cubes">立方体リストを更新</button>
+        <button id="refresh-cubes">立体リストを更新</button>
     </div>
     
     <h1>Three.js MCP サーバー HTTP API テスト</h1>
@@ -256,14 +256,73 @@
                 <pre id="add-prism-response-text"></pre>
             </div>
         </div>
+
+        <div class="card">
+            <h2>球体を追加</h2>
+            <div class="form-group">
+                <label for="sphere-radius">半径:</label>
+                <input type="number" id="sphere-radius" value="5" min="1" max="50">
+            </div>
+            
+            <div class="form-group">
+                <label for="sphere-width-segments">横方向の分割数:</label>
+                <input type="number" id="sphere-width-segments" value="32" min="3" max="64">
+            </div>
+            
+            <div class="form-group">
+                <label for="sphere-height-segments">縦方向の分割数:</label>
+                <input type="number" id="sphere-height-segments" value="16" min="2" max="64">
+            </div>
+            
+            <div class="form-group">
+                <label for="sphere-color">色 (16進数):</label>
+                <input type="text" id="sphere-color" value="0000ff">
+            </div>
+            
+            <h3>位置</h3>
+            <div class="form-group">
+                <label for="sphere-position-x">X:</label>
+                <input type="number" id="sphere-position-x" value="0" step="1">
+            </div>
+            <div class="form-group">
+                <label for="sphere-position-y">Y:</label>
+                <input type="number" id="sphere-position-y" value="10" step="1">
+            </div>
+            <div class="form-group">
+                <label for="sphere-position-z">Z:</label>
+                <input type="number" id="sphere-position-z" value="0" step="1">
+            </div>
+            
+            <h3>回転 (ラジアン)</h3>
+            <div class="form-group">
+                <label for="sphere-rotation-x">X:</label>
+                <input type="number" id="sphere-rotation-x" value="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="sphere-rotation-y">Y:</label>
+                <input type="number" id="sphere-rotation-y" value="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="sphere-rotation-z">Z:</label>
+                <input type="number" id="sphere-rotation-z" value="0" step="0.1">
+            </div>
+            
+            <button id="add-sphere">球体を追加</button>
+            <button id="add-random-sphere">ランダム球体を追加</button>
+            
+            <div id="add-sphere-response" class="response" style="display: none;">
+                <h3>レスポンス:</h3>
+                <pre id="add-sphere-response-text"></pre>
+            </div>
+        </div>
         
         <div class="card">
-            <h2>立方体リスト</h2>
-            <button id="get-all-cubes">すべての立方体を取得</button>
-            <button id="delete-all-cubes">すべての立方体を削除</button>
+            <h2>立体リスト</h2>
+            <button id="get-all-cubes">すべての立体を取得</button>
+            <button id="delete-all-cubes">すべての立体を削除</button>
             
             <ul id="cube-list" class="cube-list">
-                <!-- 立方体リストがここに表示されます -->
+                <!-- 立体リストがここに表示されます -->
             </ul>
             
             <div id="list-response" class="response" style="display: none;">
@@ -273,13 +332,13 @@
         </div>
         
         <div class="card">
-            <h2>特定の立方体を取得</h2>
+            <h2>特定の立体を取得</h2>
             <div class="form-group">
-                <label for="get-cube-id">立方体ID:</label>
+                <label for="get-cube-id">立体ID:</label>
                 <input type="text" id="get-cube-id" placeholder="例: 1618456789012">
             </div>
             
-            <button id="get-cube">立方体を取得</button>
+            <button id="get-cube">立体を取得</button>
             
             <div id="get-response" class="response" style="display: none;">
                 <h3>レスポンス:</h3>
@@ -308,16 +367,16 @@
                 
                 switch (message.type) {
                     case 'init':
-                        // 初期データを受信した場合、立方体リストを更新
+                        // 初期データを受信した場合、立体リストを更新
                         updateCubeList(message.cubes);
                         break;
                     case 'add':
-                        // 新しい立方体が追加された場合、立方体リストを更新
+                        // 新しい立体が追加された場合、立体リストを更新
                         fetchAllCubes();
                         break;
                     case 'delete':
                     case 'clear':
-                        // 立方体が削除された場合、立方体リストを更新
+                        // 立体が削除された場合、立体リストを更新
                         fetchAllCubes();
                         break;
                 }
@@ -341,7 +400,7 @@
             window.location.href = 'index.html';
         });
         
-        // 立方体リストを更新ボタン
+        // 立体リストを更新ボタン
         document.getElementById('refresh-cubes').addEventListener('click', function() {
             fetchAllCubes();
         });
@@ -385,7 +444,7 @@
                 responseElement.style.display = 'block';
                 responseElement.classList.remove('error');
                 
-                // 立方体リストを更新
+                // 立体リストを更新
                 fetchAllCubes();
             } catch (error) {
                 const responseElement = document.getElementById('add-response');
@@ -417,7 +476,7 @@
                 responseElement.style.display = 'block';
                 responseElement.classList.remove('error');
                 
-                // 立方体リストを更新
+                // 立体リストを更新
                 fetchAllCubes();
             } catch (error) {
                 const responseElement = document.getElementById('add-response');
@@ -429,12 +488,12 @@
             }
         });
         
-        // すべての立方体を取得ボタン
+        // すべての立体を取得ボタン
         document.getElementById('get-all-cubes').addEventListener('click', function() {
             fetchAllCubes(true);
         });
         
-        // すべての立方体を削除ボタン
+        // すべての立体を削除ボタン
         document.getElementById('delete-all-cubes').addEventListener('click', async function() {
             try {
                 const response = await fetch(`${API_BASE_URL}/cubes`, {
@@ -450,7 +509,7 @@
                 responseElement.style.display = 'block';
                 responseElement.classList.remove('error');
                 
-                // 立方体リストを更新
+                // 立体リストを更新
                 fetchAllCubes();
             } catch (error) {
                 const responseElement = document.getElementById('list-response');
@@ -462,12 +521,12 @@
             }
         });
         
-        // 特定の立方体を取得ボタン
+        // 特定の立体を取得ボタン
         document.getElementById('get-cube').addEventListener('click', async function() {
             const cubeId = document.getElementById('get-cube-id').value;
             
             if (!cubeId) {
-                alert('立方体IDを入力してください');
+                alert('立体IDを入力してください');
                 return;
             }
             
@@ -492,7 +551,7 @@
             }
         });
         
-        // すべての立方体を取得して表示する関数
+        // すべての立体を取得して表示する関数
         async function fetchAllCubes(showResponse = false) {
             try {
                 const response = await fetch(`${API_BASE_URL}/cubes`);
@@ -508,7 +567,7 @@
                     responseElement.classList.remove('error');
                 }
                 
-                // 立方体リストを更新
+                // 立体リストを更新
                 updateCubeList(cubes);
             } catch (error) {
                 if (showResponse) {
@@ -526,13 +585,13 @@
             }
         }
         
-        // 立方体リストを更新する関数
+        // 立体リストを更新する関数
         function updateCubeList(cubes) {
             const cubeList = document.getElementById('cube-list');
             cubeList.innerHTML = '';
             
             if (cubes.length === 0) {
-                cubeList.innerHTML = '<li>立方体がありません</li>';
+                cubeList.innerHTML = '<li>立体がありません</li>';
                 return;
             }
             
@@ -584,7 +643,7 @@
                         responseElement.style.display = 'block';
                         responseElement.classList.remove('error');
                         
-                        // 立方体リストを更新
+                        // 立体リストを更新
                         fetchAllCubes();
                     } catch (error) {
                         const responseElement = document.getElementById('list-response');
@@ -641,7 +700,7 @@
                 responseElement.style.display = 'block';
                 responseElement.classList.remove('error');
                 
-                // 立方体リストを更新
+                // 立体リストを更新
                 fetchAllCubes();
             } catch (error) {
                 const responseElement = document.getElementById('add-prism-response');
@@ -673,7 +732,7 @@
                 responseElement.style.display = 'block';
                 responseElement.classList.remove('error');
                 
-                // 立方体リストを更新
+                // 立体リストを更新
                 fetchAllCubes();
             } catch (error) {
                 const responseElement = document.getElementById('add-prism-response');
@@ -685,13 +744,13 @@
             }
         });
 
-        // 立方体リストを更新する関数
+        // 立体リストを更新する関数
         function updateCubeList(cubes) {
             const cubeList = document.getElementById('cube-list');
             cubeList.innerHTML = '';
             
             if (cubes.length === 0) {
-                cubeList.innerHTML = '<li>オブジェクトがありません</li>';
+                cubeList.innerHTML = '<li>立体がありません</li>';
                 return;
             }
             
@@ -752,7 +811,7 @@
                         responseElement.style.display = 'block';
                         responseElement.classList.remove('error');
                         
-                        // 立方体リストを更新
+                        // 立体リストを更新
                         fetchAllCubes();
                     } catch (error) {
                         const responseElement = document.getElementById('list-response');
@@ -766,7 +825,178 @@
             });
         }
         
-        // ページ読み込み時に立方体リストを取得
+        // 球体を追加ボタン
+        document.getElementById('add-sphere').addEventListener('click', async function() {
+            const radius = parseFloat(document.getElementById('sphere-radius').value);
+            const widthSegments = parseInt(document.getElementById('sphere-width-segments').value);
+            const heightSegments = parseInt(document.getElementById('sphere-height-segments').value);
+            const colorHex = document.getElementById('sphere-color').value;
+            const color = parseInt(colorHex, 16);
+            
+            const posX = parseFloat(document.getElementById('sphere-position-x').value);
+            const posY = parseFloat(document.getElementById('sphere-position-y').value);
+            const posZ = parseFloat(document.getElementById('sphere-position-z').value);
+            
+            const rotX = parseFloat(document.getElementById('sphere-rotation-x').value);
+            const rotY = parseFloat(document.getElementById('sphere-rotation-y').value);
+            const rotZ = parseFloat(document.getElementById('sphere-rotation-z').value);
+            
+            const sphereData = {
+                radius: radius,
+                widthSegments: widthSegments,
+                heightSegments: heightSegments,
+                color: color,
+                position: { x: posX, y: posY, z: posZ },
+                rotation: { x: rotX, y: rotY, z: rotZ }
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/spheres`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(sphereData)
+                });
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('add-sphere-response');
+                const responseTextElement = document.getElementById('add-sphere-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+                
+                // 立体リストを更新
+                fetchAllCubes();
+            } catch (error) {
+                const responseElement = document.getElementById('add-sphere-response');
+                const responseTextElement = document.getElementById('add-sphere-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
+        
+        // ランダム球体を追加ボタン
+        document.getElementById('add-random-sphere').addEventListener('click', async function() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/spheres`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('add-sphere-response');
+                const responseTextElement = document.getElementById('add-sphere-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+                
+                // 立体リストを更新
+                fetchAllCubes();
+            } catch (error) {
+                const responseElement = document.getElementById('add-sphere-response');
+                const responseTextElement = document.getElementById('add-sphere-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
+
+        // 立体リストを更新する関数
+        function updateCubeList(cubes) {
+            const cubeList = document.getElementById('cube-list');
+            cubeList.innerHTML = '';
+            
+            if (cubes.length === 0) {
+                cubeList.innerHTML = '<li>立体がありません</li>';
+                return;
+            }
+            
+            cubes.forEach(cube => {
+                const li = document.createElement('li');
+                li.className = 'cube-item';
+                
+                const colorHex = cube.color.toString(16).padStart(6, '0');
+                
+                // オブジェクトのタイプに応じて表示を変更
+                let objectType = '立方体';
+                let sizeInfo = `サイズ: ${cube.size}`;
+                
+                if (cube.type === 'prism') {
+                    objectType = `正${cube.segments}角柱`;
+                    sizeInfo = `半径: ${cube.radius}, 高さ: ${cube.height}`;
+                } else if (cube.type === 'sphere') {
+                    objectType = '球体';
+                    sizeInfo = `半径: ${cube.radius}`;
+                }
+                
+                li.innerHTML = `
+                    <div>
+                        <span class="cube-color" style="background-color: #${colorHex};"></span>
+                        ID: ${cube.id}, タイプ: ${objectType}, ${sizeInfo}
+                    </div>
+                    <div class="cube-actions">
+                        <button class="view-cube" data-id="${cube.id}">詳細</button>
+                        <button class="delete-cube" data-id="${cube.id}">削除</button>
+                    </div>
+                `;
+                
+                cubeList.appendChild(li);
+            });
+            
+            // 詳細ボタンのイベントリスナーを追加
+            document.querySelectorAll('.view-cube').forEach(button => {
+                button.addEventListener('click', function() {
+                    const cubeId = this.getAttribute('data-id');
+                    document.getElementById('get-cube-id').value = cubeId;
+                    document.getElementById('get-cube').click();
+                });
+            });
+            
+            // 削除ボタンのイベントリスナーを追加
+            document.querySelectorAll('.delete-cube').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const cubeId = this.getAttribute('data-id');
+                    
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/cubes/${cubeId}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        const responseData = await response.json();
+                        
+                        const responseElement = document.getElementById('list-response');
+                        const responseTextElement = document.getElementById('list-response-text');
+                        
+                        responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                        responseElement.style.display = 'block';
+                        responseElement.classList.remove('error');
+                        
+                        // 立体リストを更新
+                        fetchAllCubes();
+                    } catch (error) {
+                        const responseElement = document.getElementById('list-response');
+                        const responseTextElement = document.getElementById('list-response-text');
+                        
+                        responseTextElement.textContent = `エラー: ${error.message}`;
+                        responseElement.style.display = 'block';
+                        responseElement.classList.add('error');
+                    }
+                });
+            });
+        }
+        
+        // ページ読み込み時に立体リストを取得
         document.addEventListener('DOMContentLoaded', function() {
             fetchAllCubes();
             initWebSocket();

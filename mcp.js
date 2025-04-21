@@ -150,6 +150,91 @@ server.tool("add-cube", "Add a new cube to the scene", {
     }
 });
 
+// Add regular prism tool
+server.tool("add-prism", "Add a regular prism to the scene", {
+    radius: z.number().optional().describe("Radius of the prism base (default: 5)"),
+    height: z.number().optional().describe("Height of the prism (default: 10)"),
+    segments: z.number().min(3).optional().describe("Number of sides of the prism base (min: 3, default: 6)"),
+    color: z.object({
+        r: z.number().min(0).max(255).describe("Red component (0-255)"),
+        g: z.number().min(0).max(255).describe("Green component (0-255)"),
+        b: z.number().min(0).max(255).describe("Blue component (0-255)")
+    }).optional().describe("Color(RGB format) of the prism (default: random)"),
+    position: z.object({
+        x: z.number().describe("X position"),
+        y: z.number().describe("Y position"),
+        z: z.number().describe("Z position")
+    }).optional().describe("Position of the prism (default: random)"),
+    rotation: z.object({
+        x: z.number().describe("X rotation in radians"),
+        y: z.number().describe("Y rotation in radians"),
+        z: z.number().describe("Z rotation in radians")
+    }).optional().describe("Rotation of the prism (default: random)")
+}, async (params) => {
+    const url = `${API_BASE}/api/prisms`;
+    
+    console.error("Received prism params:", JSON.stringify(params, null, 2));
+    
+    // Clone the params to avoid modifying the original
+    const paramsClone = params ? JSON.parse(JSON.stringify(params)) : {};
+    
+    // Ensure color is properly set
+    if (paramsClone && paramsClone.color) {
+        if (typeof paramsClone.color === 'object' && 'r' in paramsClone.color) {
+            const { r, g, b } = paramsClone.color;
+            // Convert RGB to hex color format (0xRRGGBB)
+            const hexColor = (r << 16) | (g << 8) | b;
+            console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${hexColor.toString(16)}`);
+            paramsClone.color = hexColor;
+        } else {
+            console.error(`Using provided color: ${paramsClone.color}`);
+        }
+    }
+    
+    console.error("Sending prism params to API:", JSON.stringify(paramsClone, null, 2));
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(paramsClone || {})
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const prism = await response.json();
+        const segmentsText = prism.segments ? `${prism.segments}角` : '';
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `正${segmentsText}柱が追加されました。ID: ${prism.id}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(prism, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error adding prism:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Failed to add prism: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 // Remove cube tool
 server.tool("remove-cube", "Remove a cube from the scene by ID", {
     id: z.number().describe("ID of the cube to remove")

@@ -106,10 +106,27 @@ function handleClearMessage() {
 }
 
 
-// APIから取得したデータに基づいて立方体を追加する関数
+// APIから取得したデータに基づいてオブジェクトを追加する関数
 function addCubeFromData(cubeData) {
-    // ジオメトリの作成
-    const geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);
+    let geometry;
+    let objectType = "立方体";
+    
+    // オブジェクトのタイプに応じてジオメトリを作成
+    if (cubeData.type === 'prism') {
+        // 正n角柱の場合
+        geometry = new THREE.CylinderGeometry(
+            cubeData.radius,  // 上面の半径
+            cubeData.radius,  // 底面の半径
+            cubeData.height,  // 高さ
+            cubeData.segments, // 底面の角の数
+            1,                // 高さ方向の分割数
+            false             // 開いた円柱にするかどうか
+        );
+        objectType = `正${cubeData.segments}角柱`;
+    } else {
+        // デフォルトは立方体
+        geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);
+    }
     
     // 色の処理
     let color = cubeData.color;
@@ -121,7 +138,7 @@ function addCubeFromData(cubeData) {
     
     // 色の値を16進数で表示（デバッグ用）
     const hexColor = color.toString(16).padStart(6, '0');
-    console.log(`Creating cube with color: 0x${hexColor} (R:${parseInt(hexColor.substr(0,2), 16)}, G:${parseInt(hexColor.substr(2,2), 16)}, B:${parseInt(hexColor.substr(4,2), 16)})`);
+    console.log(`Creating ${objectType} with color: 0x${hexColor} (R:${parseInt(hexColor.substr(0,2), 16)}, G:${parseInt(hexColor.substr(2,2), 16)}, B:${parseInt(hexColor.substr(4,2), 16)})`);
     
     // マテリアルの作成
     const material = new THREE.MeshStandardMaterial({
@@ -133,18 +150,18 @@ function addCubeFromData(cubeData) {
     // メッシュの作成
     const cube = new THREE.Mesh(geometry, material);
     
-    // 立方体の位置を設定
+    // オブジェクトの位置を設定
     cube.position.x = cubeData.position.x;
     cube.position.y = cubeData.position.y;
     cube.position.z = cubeData.position.z;
     
-    // 立方体の回転を設定
+    // オブジェクトの回転を設定
     cube.rotation.x = cubeData.rotation.x;
     cube.rotation.y = cubeData.rotation.y;
     cube.rotation.z = cubeData.rotation.z;
     
     // APIから取得したIDを保存
-    cube.userData = { id: cubeData.id };
+    cube.userData = { id: cubeData.id, type: cubeData.type };
     
     // シーンに追加
     scene.add(cube);
@@ -152,9 +169,9 @@ function addCubeFromData(cubeData) {
     // 配列に追加
     cubes.push(cube);
     
-    console.log(`立方体が追加されました。ID: ${cubeData.id}, 現在の立方体数: ${cubes.length}`);
+    console.log(`${objectType}が追加されました。ID: ${cubeData.id}, 現在のオブジェクト数: ${cubes.length}`);
     
-    // 追加した立方体を返す
+    // 追加したオブジェクトを返す
     return cube;
 }
 

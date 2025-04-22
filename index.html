@@ -18,6 +18,13 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/exporters/STLExporter.js"></script>
+    <script src="https://unpkg.com/three-mesh-bvh@0.5.23/build/index.umd.cjs"></script>
+    <script src="https://unpkg.com/three-bvh-csg@0.0.13/build/index.umd.cjs"></script>
+    
+    <!-- ライブラリのグローバルオブジェクトを確認 -->
+    <script>
+        console.log('Available global objects:', Object.keys(window).filter(key => key.includes('Three') || key.includes('CSG')));
+    </script>
     
     <!-- メインスクリプト -->
     <script src="script.js"></script>

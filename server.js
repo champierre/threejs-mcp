@@ -17,6 +17,7 @@ const wss = new WebSocket.Server({ server });
 
 // データファイルのパス
 const DATA_FILE = path.join(__dirname, 'data.json');
+const MASKS_FILE = path.join(__dirname, 'masks.json');
 
 // CORSを有効にする
 app.use(cors());
@@ -30,6 +31,9 @@ app.use(express.static('./'));
 // 立体データを保存する配列
 let cubes = [];
 
+// マスク情報を保存する配列
+let masks = [];
+
 // WebSocketクライアントの接続を管理
 const clients = new Set();
 
@@ -40,10 +44,11 @@ wss.on('connection', (ws) => {
     // クライアントをセットに追加
     clients.add(ws);
     
-    // 接続時に現在の立体データを送信
+    // 接続時に現在の立体データとマスクデータを送信
     ws.send(JSON.stringify({
         type: 'init',
-        cubes: cubes
+        cubes: cubes,
+        masks: masks
     }));
     
     // 切断イベント
@@ -88,8 +93,35 @@ function saveCubesData() {
     }
 }
 
+// マスクデータをファイルに保存する
+function saveMasksData() {
+    try {
+        fs.writeFileSync(MASKS_FILE, JSON.stringify(masks, null, 2), 'utf8');
+        console.log(`${masks.length}個のマスクデータを保存しました`);
+    } catch (error) {
+        console.error('マスクデータの保存に失敗しました:', error);
+    }
+}
+
+// データファイルからマスクデータを読み込む
+function loadMasksData() {
+    try {
+        if (fs.existsSync(MASKS_FILE)) {
+            const data = fs.readFileSync(MASKS_FILE, 'utf8');
+            masks = JSON.parse(data);
+            console.log(`${masks.length}個のマスクデータを読み込みました`);
+        } else {
+            console.log('マスクデータファイルが存在しません。新しいファイルを作成します。');
+            saveMasksData();
+        }
+    } catch (error) {
+        console.error('マスクデータの読み込みに失敗しました:', error);
+    }
+}
+
 // 起動時にデータを読み込む
 loadCubesData();
+loadMasksData();
 
 // 立体の色をランダムに生成する関数
 const getRandomColor = () => {
@@ -223,9 +255,61 @@ app.post('/api/spheres', (req, res) => {
     res.status(201).json(sphere);
 });
 
+// 立方体マスクを追加するAPIエンドポイント
+app.post('/api/cube-masks', (req, res) => {
+    console.log('Received cube mask request body:', JSON.stringify(req.body, null, 2));
+    const options = req.body || {};
+    
+    // デフォルト値を設定
+    const cubeMask = {
+        id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
+        type: 'cube-mask', // オブジェクトのタイプを指定
+        size: options.size || 5, // マスクの立方体のサイズ
+        targetId: options.targetId, // マスク対象のオブジェクトID
+        position: options.position || {
+            x: 0,
+            y: 0,
+            z: 0
+        },
+        rotation: options.rotation || {
+            x: 0,
+            y: 0,
+            z: 0
+        }
+    };
+    
+    // マスク対象のオブジェクトが存在するか確認
+    const targetObject = cubes.find(c => c.id === cubeMask.targetId);
+    if (!targetObject) {
+        return res.status(404).json({ error: 'マスク対象のオブジェクトが見つかりません' });
+    }
+    
+    // マスクを配列に追加
+    masks.push(cubeMask);
+    
+    // データをファイルに保存
+    saveMasksData();
+    
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'add-mask',
+        mask: cubeMask
+    });
+    
+    console.log(`立方体マスクが追加されました。ID: ${cubeMask.id}, 対象ID: ${cubeMask.targetId}`);
+    
+    // 追加したマスクを返す
+    res.status(201).json(cubeMask);
+});
+
 // すべての立体を取得するAPIエンドポイント
 app.get('/api/cubes', (req, res) => {
     res.json(cubes);
+});
+
+// すべてのマスクを取得するAPIエンドポイント
+app.get('/api/cube-masks', (req, res) => {
+    res.json(masks);
 });
 
 // 特定の立体を取得するAPIエンドポイント
@@ -277,6 +361,45 @@ app.delete('/api/cubes', (req, res) => {
     });
     
     res.status(200).json({ message: 'すべての立体が削除されました' });
+});
+
+// 特定のマスクを削除するAPIエンドポイント
+app.delete('/api/cube-masks/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = masks.findIndex(m => m.id === id);
+    
+    if (index !== -1) {
+        const deletedMask = masks[index];
+        masks.splice(index, 1);
+        
+        // データをファイルに保存
+        saveMasksData();
+        
+        // WebSocketクライアントに通知
+        notifyClients({
+            type: 'delete-mask',
+            id: id
+        });
+        
+        res.status(200).json({ message: 'マスクが削除されました' });
+    } else {
+        res.status(404).json({ error: 'マスクが見つかりません' });
+    }
+});
+
+// すべてのマスクを削除するAPIエンドポイント
+app.delete('/api/cube-masks', (req, res) => {
+    masks.length = 0;
+    
+    // データをファイルに保存
+    saveMasksData();
+    
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'clear-masks'
+    });
+    
+    res.status(200).json({ message: 'すべてのマスクが削除されました' });
 });
 
 // サーバーを起動

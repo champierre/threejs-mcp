@@ -2,12 +2,16 @@
 let scene, camera, renderer, controls;
 // 立方体の配列
 const cubes = [];
+// マスクの配列
+const masks = [];
 // 立方体のサイズ
 const cubeSize = 10;
 // APIのベースURL
 const API_BASE_URL = 'http://localhost:3000/api';
 // WebSocketの接続
 let socket;
+// CSG操作用のオブジェクト
+let csgEvaluator;
 // 立方体の色をランダムに生成する関数
 const getRandomColor = () => {
     return Math.floor(Math.random() * 16777215);
@@ -29,20 +33,32 @@ function initWebSocket() {
         
         switch (message.type) {
             case 'init':
-                // 初期データを受信した場合、すべての立方体を表示
+                // 初期データを受信した場合、すべての立方体とマスクを表示
                 handleInitMessage(message);
                 break;
             case 'add':
                 // 新しい立方体が追加された場合
                 handleAddMessage(message);
                 break;
+            case 'add-mask':
+                // 新しいマスクが追加された場合
+                handleAddMaskMessage(message);
+                break;
             case 'delete':
                 // 立方体が削除された場合
                 handleDeleteMessage(message);
                 break;
+            case 'delete-mask':
+                // マスクが削除された場合
+                handleDeleteMaskMessage(message);
+                break;
             case 'clear':
                 // すべての立方体が削除された場合
                 handleClearMessage();
+                break;
+            case 'clear-masks':
+                // すべてのマスクが削除された場合
+                handleClearMasksMessage();
                 break;
         }
     });
@@ -66,12 +82,28 @@ function handleInitMessage(message) {
     cubes.forEach(cube => scene.remove(cube));
     cubes.length = 0;
     
+    // シーンから既存のマスクをすべて削除
+    masks.forEach(mask => {
+        if (mask.mesh) {
+            scene.remove(mask.mesh);
+        }
+    });
+    masks.length = 0;
+    
     // 受信したすべての立方体を追加
     message.cubes.forEach(cubeData => {
         addCubeFromData(cubeData);
     });
     
     console.log(`${message.cubes.length}個の立方体を初期化しました`);
+    
+    // 受信したすべてのマスクを追加
+    if (message.masks && message.masks.length > 0) {
+        message.masks.forEach(maskData => {
+            addMaskFromData(maskData);
+        });
+        console.log(`${message.masks.length}個のマスクを初期化しました`);
+    }
 }
 
 // 立方体追加メッセージを処理する関数
@@ -103,6 +135,101 @@ function handleClearMessage() {
     cubes.forEach(cube => scene.remove(cube));
     cubes.length = 0;
     console.log('すべての立方体が削除されました');
+}
+
+// マスク追加メッセージを処理する関数
+function handleAddMaskMessage(message) {
+    // すでに表示されているマスクはスキップ
+    if (masks.some(mask => mask.id === message.mask.id)) {
+        return;
+    }
+    
+    // マスクを作成して表示
+    addMaskFromData(message.mask);
+    console.log(`新しいマスクが追加されました。ID: ${message.mask.id}`);
+}
+
+// マスク削除メッセージを処理する関数
+function handleDeleteMaskMessage(message) {
+    const index = masks.findIndex(mask => mask.id === message.id);
+    if (index !== -1) {
+        // マスクを削除
+        removeMask(masks[index]);
+        masks.splice(index, 1);
+        console.log(`マスクが削除されました。ID: ${message.id}`);
+    }
+}
+
+// すべてのマスク削除メッセージを処理する関数
+function handleClearMasksMessage() {
+    // すべてのマスクを削除
+    masks.forEach(mask => {
+        removeMask(mask);
+    });
+    masks.length = 0;
+    console.log('すべてのマスクが削除されました');
+}
+
+// APIから取得したデータに基づいてマスクを追加する関数
+function addMaskFromData(maskData) {
+    // マスク対象のオブジェクトを検索
+    const targetObject = cubes.find(cube => cube.userData && cube.userData.id === maskData.targetId);
+    if (!targetObject) {
+        console.error(`マスク対象のオブジェクトが見つかりません。ID: ${maskData.targetId}`);
+        return null;
+    }
+    
+    // マスク用の立方体ジオメトリを作成
+    const maskGeometry = new THREE.BoxGeometry(maskData.size, maskData.size, maskData.size);
+    
+    // マスク用のメッシュを作成（表示用）
+    const maskMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff0000,
+        opacity: 0.5,
+        transparent: true,
+        wireframe: true
+    });
+    
+    // マスクメッシュの作成
+    const maskMesh = new THREE.Mesh(maskGeometry, maskMaterial);
+    
+    // マスクの位置を設定
+    maskMesh.position.x = maskData.position.x;
+    maskMesh.position.y = maskData.position.y;
+    maskMesh.position.z = maskData.position.z;
+    
+    // マスクの回転を設定
+    maskMesh.rotation.x = maskData.rotation.x;
+    maskMesh.rotation.y = maskData.rotation.y;
+    maskMesh.rotation.z = maskData.rotation.z;
+    
+    // マスクメッシュをシーンに追加（視覚的な表示のみ）
+    scene.add(maskMesh);
+    
+    // マスク情報を保存
+    const mask = {
+        id: maskData.id,
+        targetId: maskData.targetId,
+        size: maskData.size,
+        position: maskData.position,
+        rotation: maskData.rotation,
+        mesh: maskMesh
+    };
+    
+    // マスク配列に追加
+    masks.push(mask);
+    
+    console.log(`マスクが追加されました。ID: ${maskData.id}, 対象ID: ${maskData.targetId}`);
+    
+    return mask;
+}
+
+// マスクを削除する関数
+function removeMask(mask) {
+    // マスクメッシュがある場合は削除
+    if (mask.mesh) {
+        scene.remove(mask.mesh);
+    }
 }
 
 
@@ -208,6 +335,9 @@ function init() {
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    
+    // CSG操作は使用しない
+    // csgEvaluator = new ThreeBVHCSG.CSGEvaluator();
 
     // 光源の追加
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);

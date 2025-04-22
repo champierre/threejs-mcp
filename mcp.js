@@ -364,6 +364,71 @@ server.tool("remove-cube", "IDを指定して立体をシーンから削除", {
     }
 });
 
+// Add cube mask tool
+server.tool("add-cube-mask", "立方体マスクを追加して空洞を作成", {
+    targetId: z.number().describe("ID of the target object to mask"),
+    size: z.number().optional().describe("Size of the cube mask (default: 5)"),
+    position: z.object({
+        x: z.number().describe("X position relative to the target object"),
+        y: z.number().describe("Y position relative to the target object"),
+        z: z.number().describe("Z position relative to the target object")
+    }).optional().describe("Position of the cube mask (default: center of target)"),
+    rotation: z.object({
+        x: z.number().describe("X rotation in radians"),
+        y: z.number().describe("Y rotation in radians"),
+        z: z.number().describe("Z rotation in radians")
+    }).optional().describe("Rotation of the cube mask (default: no rotation)")
+}, async (params) => {
+    const url = `${API_BASE}/api/cube-masks`;
+    
+    console.error("Received cube mask params:", JSON.stringify(params, null, 2));
+    
+    // Clone the params to avoid modifying the original
+    const paramsClone = params ? JSON.parse(JSON.stringify(params)) : {};
+    
+    console.error("Sending cube mask params to API:", JSON.stringify(paramsClone, null, 2));
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(paramsClone || {})
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const cubeMask = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `立方体マスクが追加されました。ID: ${cubeMask.id}, 対象ID: ${cubeMask.targetId}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(cubeMask, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error adding cube mask:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `立方体マスクの追加に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 // Remove all cubes tool
 server.tool("remove-all-cubes", "すべての立体をシーンから削除", {}, async () => {
     const url = `${API_BASE}/api/cubes`;

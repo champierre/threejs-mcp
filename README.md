@@ -10,6 +10,7 @@
 - 追加されたオブジェクトの情報はJSONファイルに永続化されます
 - WebSocketを使用してリアルタイムに変更が反映されます
 - MCPサーバーを通じて立体の取得や追加を行うことができます
+- 立方体マスクを使用して、立体に空洞を作成できます
 - シーン内のオブジェクトをSTLファイルとしてエクスポートできます
 
 ## Claude Desktopでの使用例
@@ -180,6 +181,35 @@ remove-all-cubes
 
 シーン内のすべての立体を削除します。パラメータは必要ありません。
 
+### 立方体マスクの追加
+
+```
+add-cube-mask
+```
+
+立方体マスクを追加して、立体に空洞を作成します。以下のパラメータを指定できます：
+
+- `targetId`: マスク対象のオブジェクトID（必須）
+- `size`: マスクの立方体のサイズ（デフォルト: 5）
+- `position`: マスクの位置（デフォルト: 対象オブジェクトの中心）
+  - `x`: X座標
+  - `y`: Y座標
+  - `z`: Z座標
+- `rotation`: マスクの回転（ラジアン単位、デフォルト: 回転なし）
+  - `x`: X軸周りの回転
+  - `y`: Y軸周りの回転
+  - `z`: Z軸周りの回転
+
+例：
+```json
+{
+  "targetId": 1618456789012,
+  "size": 3,
+  "position": { "x": 0, "y": 0, "z": 0 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
 ## Claude での設定方法
 
 このMCPサーバーをClaudeで使用するには、以下の設定をClaudeの設定ファイルに追加してください。
@@ -205,6 +235,79 @@ remove-all-cubes
 ## HTTP API
 
 このアプリケーションは、外部からアクセスできるHTTP APIを提供しています。すべてのAPI操作はデータファイルに永続化され、WebSocketを通じてリアルタイムに通知されます。
+
+### 立方体マスクの追加
+
+```
+POST /api/cube-masks
+```
+
+curlコマンド例:
+```bash
+curl -X POST http://localhost:3000/api/cube-masks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "targetId": 1618456789012,
+    "size": 3,
+    "position": { "x": 0, "y": 0, "z": 0 },
+    "rotation": { "x": 0, "y": 0, "z": 0 }
+  }'
+```
+
+リクエスト例:
+```json
+{
+  "targetId": 1618456789012,
+  "size": 3,
+  "position": { "x": 0, "y": 0, "z": 0 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
+レスポンス例:
+```json
+{
+  "id": 1618456789013,
+  "type": "cube-mask",
+  "targetId": 1618456789012,
+  "size": 3,
+  "position": { "x": 0, "y": 0, "z": 0 },
+  "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
+### すべてのマスクを取得
+
+```
+GET /api/cube-masks
+```
+
+curlコマンド例:
+```bash
+curl -X GET http://localhost:3000/api/cube-masks
+```
+
+### 特定のマスクを削除
+
+```
+DELETE /api/cube-masks/:id
+```
+
+curlコマンド例:
+```bash
+curl -X DELETE http://localhost:3000/api/cube-masks/1618456789013
+```
+
+### すべてのマスクを削除
+
+```
+DELETE /api/cube-masks
+```
+
+curlコマンド例:
+```bash
+curl -X DELETE http://localhost:3000/api/cube-masks
+```
 
 ### 立体の追加
 

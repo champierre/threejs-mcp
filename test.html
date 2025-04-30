@@ -345,6 +345,33 @@
                 <pre id="get-response-text"></pre>
             </div>
         </div>
+
+        <div class="card">
+            <h2>立体をくりぬく (CSG減算)</h2>
+            <p>2つの立体を選択して、1つ目の立体から2つ目の立体をくりぬきます。</p>
+            
+            <div class="form-group">
+                <label for="subtract-from-id">くりぬかれる立体ID:</label>
+                <input type="text" id="subtract-from-id" placeholder="例: 1618456789012">
+            </div>
+            
+            <div class="form-group">
+                <label for="subtract-id">くりぬく立体ID:</label>
+                <input type="text" id="subtract-id" placeholder="例: 1618456789012">
+            </div>
+            
+            <div class="form-group">
+                <label for="subtract-color">色 (16進数):</label>
+                <input type="text" id="subtract-color" value="ff00ff">
+            </div>
+            
+            <button id="subtract-objects">立体をくりぬく</button>
+            
+            <div id="subtract-response" class="response" style="display: none;">
+                <h3>レスポンス:</h3>
+                <pre id="subtract-response-text"></pre>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -655,6 +682,20 @@
                     }
                 });
             });
+            
+            // くりぬく用の立体選択ボタンのイベントリスナーを追加
+            document.querySelectorAll('.select-for-subtract').forEach(button => {
+                button.addEventListener('click', function() {
+                    const cubeId = this.getAttribute('data-id');
+                    const target = this.getAttribute('data-target');
+                    
+                    if (target === 'from') {
+                        document.getElementById('subtract-from-id').value = cubeId;
+                    } else if (target === 'subtract') {
+                        document.getElementById('subtract-id').value = cubeId;
+                    }
+                });
+            });
         }
         
         // 正n角柱を追加ボタン
@@ -823,6 +864,20 @@
                     }
                 });
             });
+            
+            // くりぬく用の立体選択ボタンのイベントリスナーを追加
+            document.querySelectorAll('.select-for-subtract').forEach(button => {
+                button.addEventListener('click', function() {
+                    const cubeId = this.getAttribute('data-id');
+                    const target = this.getAttribute('data-target');
+                    
+                    if (target === 'from') {
+                        document.getElementById('subtract-from-id').value = cubeId;
+                    } else if (target === 'subtract') {
+                        document.getElementById('subtract-id').value = cubeId;
+                    }
+                });
+            });
         }
         
         // 球体を追加ボタン
@@ -938,6 +993,9 @@
                 } else if (cube.type === 'sphere') {
                     objectType = '球体';
                     sizeInfo = `半径: ${cube.radius}`;
+                } else if (cube.type === 'subtracted') {
+                    objectType = 'くりぬかれた立体';
+                    sizeInfo = `元の立体ID: ${cube.fromId}, くりぬいた立体ID: ${cube.subtractId}`;
                 }
                 
                 li.innerHTML = `
@@ -948,6 +1006,8 @@
                     <div class="cube-actions">
                         <button class="view-cube" data-id="${cube.id}">詳細</button>
                         <button class="delete-cube" data-id="${cube.id}">削除</button>
+                        <button class="select-for-subtract" data-id="${cube.id}" data-target="from">くりぬかれる</button>
+                        <button class="select-for-subtract" data-id="${cube.id}" data-target="subtract">くりぬく</button>
                     </div>
                 `;
                 
@@ -994,7 +1054,69 @@
                     }
                 });
             });
+            
+            // くりぬく用の立体選択ボタンのイベントリスナーを追加
+            document.querySelectorAll('.select-for-subtract').forEach(button => {
+                button.addEventListener('click', function() {
+                    const cubeId = this.getAttribute('data-id');
+                    const target = this.getAttribute('data-target');
+                    
+                    if (target === 'from') {
+                        document.getElementById('subtract-from-id').value = cubeId;
+                    } else if (target === 'subtract') {
+                        document.getElementById('subtract-id').value = cubeId;
+                    }
+                });
+            });
         }
+        
+        // 立体をくりぬくボタン
+        document.getElementById('subtract-objects').addEventListener('click', async function() {
+            const fromId = document.getElementById('subtract-from-id').value;
+            const subtractId = document.getElementById('subtract-id').value;
+            const colorHex = document.getElementById('subtract-color').value;
+            const color = parseInt(colorHex, 16);
+            
+            if (!fromId || !subtractId) {
+                alert('くりぬかれる立体IDとくりぬく立体IDを入力してください');
+                return;
+            }
+            
+            const subtractData = {
+                fromId: fromId,
+                subtractId: subtractId,
+                color: color
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/subtract`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(subtractData)
+                });
+                
+                const responseData = await response.json();
+                
+                const responseElement = document.getElementById('subtract-response');
+                const responseTextElement = document.getElementById('subtract-response-text');
+                
+                responseTextElement.textContent = JSON.stringify(responseData, null, 2);
+                responseElement.style.display = 'block';
+                responseElement.classList.remove('error');
+                
+                // 立体リストを更新
+                fetchAllCubes();
+            } catch (error) {
+                const responseElement = document.getElementById('subtract-response');
+                const responseTextElement = document.getElementById('subtract-response-text');
+                
+                responseTextElement.textContent = `エラー: ${error.message}`;
+                responseElement.style.display = 'block';
+                responseElement.classList.add('error');
+            }
+        });
         
         // ページ読み込み時に立体リストを取得
         document.addEventListener('DOMContentLoaded', function() {

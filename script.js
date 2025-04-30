@@ -1,6 +1,5 @@
 // Three.jsの基本要素
 let scene, camera, renderer, controls;
-// 立方体の配列
 const cubes = [];
 // 立方体のサイズ
 const cubeSize = 10;
@@ -8,6 +7,7 @@ const cubeSize = 10;
 const API_BASE_URL = 'http://localhost:3000/api';
 // WebSocketの接続
 let socket;
+let CSG;
 // 立方体の色をランダムに生成する関数
 const getRandomColor = () => {
     return Math.floor(Math.random() * 16777215);
@@ -110,6 +110,7 @@ function handleClearMessage() {
 function addCubeFromData(cubeData) {
     let geometry;
     let objectType = "立方体";
+    let mesh;
     
     // オブジェクトのタイプに応じてジオメトリを作成
     if (cubeData.type === 'prism') {
@@ -131,56 +132,138 @@ function addCubeFromData(cubeData) {
             cubeData.heightSegments  // 縦方向の分割数
         );
         objectType = `球体`;
+    } else if (cubeData.type === 'subtracted') {
+        const fromData = cubeData.fromData;
+        const subtractData = cubeData.subtractData;
+        
+        const fromMesh = createMeshFromData(fromData);
+        
+        const subtractMesh = createMeshFromData(subtractData);
+        
+        const csgFrom = CSG.fromMesh(fromMesh);
+        const csgSubtract = CSG.fromMesh(subtractMesh);
+        const csgResult = csgFrom.subtract(csgSubtract);
+        
+        mesh = CSG.toMesh(csgResult, fromMesh.matrix);
+        
+        // 色の処理
+        let color = cubeData.color;
+        // 色が数値であることを確認
+        if (typeof color !== 'number') {
+            console.error('Invalid color format:', color);
+            color = 0xffffff; // デフォルトは白
+        }
+        
+        // マテリアルの作成
+        const material = new THREE.MeshStandardMaterial({
+            color: color,
+            metalness: 0.3,
+            roughness: 0.4,
+        });
+        
+        mesh.material = material;
+        objectType = "減算された立体";
     } else {
         // デフォルトは立方体
         geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);
     }
     
-    // 色の処理
-    let color = cubeData.color;
-    // 色が数値であることを確認
-    if (typeof color !== 'number') {
-        console.error('Invalid color format:', color);
-        color = 0xffffff; // デフォルトは白
+    if (!mesh) {
+        // 色の処理
+        let color = cubeData.color;
+        // 色が数値であることを確認
+        if (typeof color !== 'number') {
+            console.error('Invalid color format:', color);
+            color = 0xffffff; // デフォルトは白
+        }
+        
+        // 色の値を16進数で表示（デバッグ用）
+        const hexColor = color.toString(16).padStart(6, '0');
+        console.log(`Creating ${objectType} with color: 0x${hexColor} (R:${parseInt(hexColor.substr(0,2), 16)}, G:${parseInt(hexColor.substr(2,2), 16)}, B:${parseInt(hexColor.substr(4,2), 16)})`);
+        
+        // マテリアルの作成
+        const material = new THREE.MeshStandardMaterial({
+            color: color,
+            metalness: 0.3,
+            roughness: 0.4,
+        });
+        
+        // メッシュの作成
+        mesh = new THREE.Mesh(geometry, material);
     }
     
-    // 色の値を16進数で表示（デバッグ用）
-    const hexColor = color.toString(16).padStart(6, '0');
-    console.log(`Creating ${objectType} with color: 0x${hexColor} (R:${parseInt(hexColor.substr(0,2), 16)}, G:${parseInt(hexColor.substr(2,2), 16)}, B:${parseInt(hexColor.substr(4,2), 16)})`);
+    // オブジェクトの位置を設定
+    mesh.position.x = cubeData.position.x;
+    mesh.position.y = cubeData.position.y;
+    mesh.position.z = cubeData.position.z;
+    
+    // オブジェクトの回転を設定
+    mesh.rotation.x = cubeData.rotation.x;
+    mesh.rotation.y = cubeData.rotation.y;
+    mesh.rotation.z = cubeData.rotation.z;
+    
+    // APIから取得したIDを保存
+    mesh.userData = { id: cubeData.id, type: cubeData.type };
+    
+    // シーンに追加
+    scene.add(mesh);
+    
+    // 配列に追加
+    cubes.push(mesh);
+    
+    console.log(`${objectType}が追加されました。ID: ${cubeData.id}, 現在のオブジェクト数: ${cubes.length}`);
+    
+    // 追加したオブジェクトを返す
+    return mesh;
+}
+
+function createMeshFromData(data) {
+    let geometry;
+    
+    // オブジェクトのタイプに応じてジオメトリを作成
+    if (data.type === 'prism') {
+        // 正n角柱の場合
+        geometry = new THREE.CylinderGeometry(
+            data.radius,  // 上面の半径
+            data.radius,  // 底面の半径
+            data.height,  // 高さ
+            data.segments, // 底面の角の数
+            1,            // 高さ方向の分割数
+            false         // 開いた円柱にするかどうか
+        );
+    } else if (data.type === 'sphere') {
+        // 球体の場合
+        geometry = new THREE.SphereGeometry(
+            data.radius,         // 半径
+            data.widthSegments,  // 横方向の分割数
+            data.heightSegments  // 縦方向の分割数
+        );
+    } else {
+        // デフォルトは立方体
+        geometry = new THREE.BoxGeometry(data.size, data.size, data.size);
+    }
     
     // マテリアルの作成
     const material = new THREE.MeshStandardMaterial({
-        color: color,
+        color: data.color,
         metalness: 0.3,
         roughness: 0.4,
     });
     
     // メッシュの作成
-    const cube = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, material);
     
     // オブジェクトの位置を設定
-    cube.position.x = cubeData.position.x;
-    cube.position.y = cubeData.position.y;
-    cube.position.z = cubeData.position.z;
+    mesh.position.x = data.position.x;
+    mesh.position.y = data.position.y;
+    mesh.position.z = data.position.z;
     
     // オブジェクトの回転を設定
-    cube.rotation.x = cubeData.rotation.x;
-    cube.rotation.y = cubeData.rotation.y;
-    cube.rotation.z = cubeData.rotation.z;
+    mesh.rotation.x = data.rotation.x;
+    mesh.rotation.y = data.rotation.y;
+    mesh.rotation.z = data.rotation.z;
     
-    // APIから取得したIDを保存
-    cube.userData = { id: cubeData.id, type: cubeData.type };
-    
-    // シーンに追加
-    scene.add(cube);
-    
-    // 配列に追加
-    cubes.push(cube);
-    
-    console.log(`${objectType}が追加されました。ID: ${cubeData.id}, 現在のオブジェクト数: ${cubes.length}`);
-    
-    // 追加したオブジェクトを返す
-    return cube;
+    return mesh;
 }
 
 // シーンの初期化
@@ -333,12 +416,113 @@ function exportToSTL() {
     console.log('シーンがSTLファイルとしてエクスポートされました');
 }
 
+let selectedFromId = null;
+let selectedSubtractId = null;
+
+function selectObject(event) {
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    
+    const intersects = raycaster.intersectObjects(cubes);
+    
+    if (intersects.length > 0) {
+        const selectedObject = intersects[0].object;
+        
+        const selectedId = selectedObject.userData.id;
+        
+        if (selectedFromId === null) {
+            selectedFromId = selectedId;
+            console.log(`くりぬかれる立体が選択されました。ID: ${selectedId}`);
+            alert(`くりぬかれる立体が選択されました。次にくりぬく立体を選択してください。`);
+        } else {
+            selectedSubtractId = selectedId;
+            console.log(`くりぬく立体が選択されました。ID: ${selectedId}`);
+            
+            subtractObjects(selectedFromId, selectedSubtractId);
+            
+            selectedFromId = null;
+            selectedSubtractId = null;
+        }
+    }
+}
+
+async function subtractObjects(fromId, subtractId) {
+    try {
+        // APIを使用して減算操作を実行
+        const response = await fetch(`${API_BASE_URL}/subtract`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fromId: fromId,
+                subtractId: subtractId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`APIエラー: ${response.status}`);
+        }
+        
+        const resultData = await response.json();
+        console.log('減算操作が成功しました:', resultData);
+    } catch (error) {
+        console.error('APIを使用した減算操作に失敗しました:', error);
+        alert('立体の減算に失敗しました。詳細はコンソールを確認してください。');
+    }
+}
+
+async function addTriangularPrism() {
+    try {
+        // APIを使用して正三角柱を追加
+        const response = await fetch(`${API_BASE_URL}/prisms`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                segments: 3, // 三角形の底面
+                radius: 5,   // 半径
+                height: 10   // 高さ
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`APIエラー: ${response.status}`);
+        }
+        
+        const prismData = await response.json();
+        return addCubeFromData(prismData);
+    } catch (error) {
+        console.error('APIを使用した正三角柱の追加に失敗しました:', error);
+        alert('正三角柱の追加に失敗しました。詳細はコンソールを確認してください。');
+    }
+}
+
 // DOMが読み込まれたら初期化
 document.addEventListener('DOMContentLoaded', () => {
     init();
     
     // WebSocketの初期化
     initWebSocket();
+    
+    CSG = window.ThreeBSP;
+    
+    // 立方体追加ボタンのイベントリスナーを設定
+    document.getElementById('add-cube-btn').addEventListener('click', addCube);
+    
+    // 三角柱追加ボタンのイベントリスナーを設定
+    document.getElementById('add-prism-btn').addEventListener('click', addTriangularPrism);
+    
+    // 減算ボタンのイベントリスナーを設定
+    document.getElementById('subtract-btn').addEventListener('click', () => {
+        alert('くりぬかれる立体を選択してください。その後、くりぬく立体を選択します。');
+        renderer.domElement.addEventListener('click', selectObject, { once: false });
+    });
     
     // STLエクスポートボタンのイベントリスナーを設定
     document.getElementById('export-stl-btn').addEventListener('click', exportToSTL);

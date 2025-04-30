@@ -101,12 +101,30 @@ app.post('/api/cubes', (req, res) => {
     console.log('Received request body:', JSON.stringify(req.body, null, 2));
     const options = req.body || {};
     
+    // 色の処理
+    let color;
+    if (options.color) {
+        if (typeof options.color === 'string' && options.color.startsWith('#')) {
+            // 16進数形式の色コードを10進数に変換
+            color = parseInt(options.color.substring(1), 16);
+        } else if (typeof options.color === 'object' && 'r' in options.color) {
+            // RGB形式の色を10進数に変換
+            const { r, g, b } = options.color;
+            color = (r << 16) | (g << 8) | b;
+        } else {
+            // 数値として扱う
+            color = options.color;
+        }
+    } else {
+        color = getRandomColor();
+    }
+    
     // デフォルト値を設定
     const cube = {
         id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
         type: 'cube', // オブジェクトのタイプを指定
         size: options.size || 10,
-        color: options.color || getRandomColor(),
+        color: color,
         position: options.position || {
             x: Math.random() * 50 - 25,
             y: Math.random() * 25 + 5,

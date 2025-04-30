@@ -297,6 +297,65 @@ app.delete('/api/cubes', (req, res) => {
     res.status(200).json({ message: 'すべての立体が削除されました' });
 });
 
+// CSG減算操作を行うAPIエンドポイント
+app.post('/api/subtract', (req, res) => {
+    console.log('Received subtraction request body:', JSON.stringify(req.body, null, 2));
+    const options = req.body || {};
+    
+    if (!options.fromId || !options.subtractId) {
+        return res.status(400).json({ error: '必須パラメータが不足しています。fromIdとsubtractIdが必要です。' });
+    }
+    
+    const fromId = parseInt(options.fromId);
+    const subtractId = parseInt(options.subtractId);
+    
+    const fromObject = cubes.find(c => c.id === fromId);
+    const subtractObject = cubes.find(c => c.id === subtractId);
+    
+    if (!fromObject || !subtractObject) {
+        return res.status(404).json({ error: '指定されたIDの立体が見つかりません' });
+    }
+    
+    // 色の処理
+    let color = options.color || fromObject.color;
+    if (typeof color === 'object' && 'r' in color) {
+        // RGB形式の色を10進数に変換
+        const { r, g, b } = color;
+        color = (r << 16) | (g << 8) | b;
+    }
+    
+    const subtractedObject = {
+        id: Date.now(),
+        type: 'subtracted',
+        fromId: fromId,
+        subtractId: subtractId,
+        fromType: fromObject.type,
+        subtractType: subtractObject.type,
+        fromData: { ...fromObject },
+        subtractData: { ...subtractObject },
+        color: color,
+        position: options.position || fromObject.position,
+        rotation: options.rotation || fromObject.rotation
+    };
+    
+    // 立体を配列に追加
+    cubes.push(subtractedObject);
+    
+    // データをファイルに保存
+    saveCubesData();
+    
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'add',
+        cube: subtractedObject
+    });
+    
+    console.log(`減算された立体が追加されました。ID: ${subtractedObject.id}, 現在の立体数: ${cubes.length}`);
+    
+    // 追加した立体を返す
+    res.status(201).json(subtractedObject);
+});
+
 // サーバーを起動
 server.listen(port, () => {
     console.log(`サーバーが http://localhost:${port} で起動しました`);

@@ -10,6 +10,9 @@
     <div class="container">
         <div id="scene-container"></div>
         <div class="controls">
+            <button id="add-cube-btn">立方体を追加</button>
+            <button id="add-prism-btn">三角柱を追加</button>
+            <button id="subtract-btn">立体をくりぬく</button>
             <button id="export-stl-btn">STLにエクスポート</button>
         </div>
     </div>
@@ -18,6 +21,9 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/exporters/STLExporter.js"></script>
+    
+    <!-- CSG ライブラリ -->
+    <script src="node_modules/three-csg-ts/lib/three-csg.js"></script>
     
     <!-- メインスクリプト -->
     <script src="script.js"></script>

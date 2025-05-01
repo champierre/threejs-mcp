@@ -620,18 +620,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         alert('CSGモジュールの読み込みに失敗しました。くり抜き機能が使用できません。');
     }
     
-    // 立方体追加ボタンのイベントリスナーを設定
-    document.getElementById('add-cube-btn').addEventListener('click', addCube);
-    
-    // 三角柱追加ボタンのイベントリスナーを設定
-    document.getElementById('add-prism-btn').addEventListener('click', addTriangularPrism);
-    
-    // 減算ボタンのイベントリスナーを設定
-    document.getElementById('subtract-btn').addEventListener('click', () => {
-        alert('くりぬかれる立体を選択してください。その後、くりぬく立体を選択します。');
-        renderer.domElement.addEventListener('click', selectObject, { once: false });
-    });
-    
     // STLエクスポートボタンのイベントリスナーを設定
     document.getElementById('export-stl-btn').addEventListener('click', exportToSTL);
 });

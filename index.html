@@ -23,7 +23,15 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/exporters/STLExporter.js"></script>
     
     <!-- CSG ライブラリ -->
-    <script src="node_modules/three-csg-ts/lib/three-csg.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+            "three-bvh-csg": "https://unpkg.com/three-bvh-csg@0.0.16/build/index.module.js",
+            "three-mesh-bvh": "https://unpkg.com/three-mesh-bvh@0.7.0/build/index.module.js"
+        }
+    }
+    </script>
     
     <!-- メインスクリプト -->
     <script src="script.js"></script>

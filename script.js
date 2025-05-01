@@ -7,7 +7,18 @@ const cubeSize = 10;
 const API_BASE_URL = 'http://localhost:3000/api';
 // WebSocketの接続
 let socket;
-let CSG;
+
+// CSGモジュールのインポート
+let Brush, Evaluator, SUBTRACTION;
+
+// CSGモジュールの読み込み
+async function loadCSGModule() {
+    const { Brush: BrushModule, Evaluator: EvaluatorModule, SUBTRACTION: SUBTRACTIONModule } = await import('three-bvh-csg');
+    Brush = BrushModule;
+    Evaluator = EvaluatorModule;
+    SUBTRACTION = SUBTRACTIONModule;
+    console.log('CSGモジュールが読み込まれました');
+}
 // 立方体の色をランダムに生成する関数
 const getRandomColor = () => {
     return Math.floor(Math.random() * 16777215);
@@ -133,18 +144,34 @@ function addCubeFromData(cubeData) {
         );
         objectType = `球体`;
     } else if (cubeData.type === 'subtracted') {
+        // CSGモジュールが読み込まれていることを確認
+        if (!Brush || !Evaluator || !SUBTRACTION) {
+            console.error('CSGモジュールが読み込まれていません');
+            return null;
+        }
+        
         const fromData = cubeData.fromData;
         const subtractData = cubeData.subtractData;
         
         const fromMesh = createMeshFromData(fromData);
-        
         const subtractMesh = createMeshFromData(subtractData);
         
-        const csgFrom = CSG.fromMesh(fromMesh);
-        const csgSubtract = CSG.fromMesh(subtractMesh);
-        const csgResult = csgFrom.subtract(csgSubtract);
+        // Brushオブジェクトを作成
+        const fromBrush = new Brush(fromMesh.geometry);
+        fromBrush.position.copy(fromMesh.position);
+        fromBrush.rotation.copy(fromMesh.rotation);
+        fromBrush.updateMatrixWorld();
         
-        mesh = CSG.toMesh(csgResult, fromMesh.matrix);
+        const subtractBrush = new Brush(subtractMesh.geometry);
+        subtractBrush.position.copy(subtractMesh.position);
+        subtractBrush.rotation.copy(subtractMesh.rotation);
+        subtractBrush.updateMatrixWorld();
+        
+        // Evaluatorを作成
+        const evaluator = new Evaluator();
+        
+        // 減算操作を実行
+        mesh = evaluator.evaluate(fromBrush, subtractBrush, SUBTRACTION);
         
         // 色の処理
         let color = cubeData.color;
@@ -452,27 +479,102 @@ function selectObject(event) {
 
 async function subtractObjects(fromId, subtractId) {
     try {
-        // APIを使用して減算操作を実行
-        const response = await fetch(`${API_BASE_URL}/subtract`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                fromId: fromId,
-                subtractId: subtractId
-            })
-        });
+        // 選択されたオブジェクトを取得
+        const fromObject = cubes.find(cube => cube.userData && cube.userData.id === fromId);
+        const subtractObject = cubes.find(cube => cube.userData && cube.userData.id === subtractId);
         
-        if (!response.ok) {
-            throw new Error(`APIエラー: ${response.status}`);
+        if (!fromObject || !subtractObject) {
+            throw new Error('選択されたオブジェクトが見つかりません');
         }
         
-        const resultData = await response.json();
-        console.log('減算操作が成功しました:', resultData);
+        // CSGモジュールが読み込まれていることを確認
+        if (!Brush || !Evaluator || !SUBTRACTION) {
+            throw new Error('CSGモジュールが読み込まれていません');
+        }
+        
+        // Brushオブジェクトを作成
+        const fromBrush = new Brush(fromObject.geometry);
+        fromBrush.updateMatrixWorld();
+        
+        const subtractBrush = new Brush(subtractObject.geometry);
+        subtractBrush.position.copy(subtractObject.position);
+        subtractBrush.rotation.copy(subtractObject.rotation);
+        subtractBrush.updateMatrixWorld();
+        
+        // Evaluatorを作成
+        const evaluator = new Evaluator();
+        
+        // 減算操作を実行
+        const resultMesh = evaluator.evaluate(fromBrush, subtractBrush, SUBTRACTION);
+        
+        // 結果のメッシュにマテリアルを適用
+        resultMesh.material = new THREE.MeshStandardMaterial({
+            color: fromObject.material.color,
+            metalness: 0.3,
+            roughness: 0.4
+        });
+        
+        // 結果のメッシュの位置を設定
+        resultMesh.position.copy(fromObject.position);
+        resultMesh.rotation.copy(fromObject.rotation);
+        
+        // 元のオブジェクトをシーンから削除
+        scene.remove(fromObject);
+        scene.remove(subtractObject);
+        
+        // 結果のメッシュをシーンに追加
+        scene.add(resultMesh);
+        
+        // cubes配列を更新
+        const fromIndex = cubes.indexOf(fromObject);
+        const subtractIndex = cubes.indexOf(subtractObject);
+        
+        if (fromIndex !== -1) {
+            cubes.splice(fromIndex, 1);
+        }
+        
+        if (subtractIndex !== -1) {
+            cubes.splice(subtractIndex, 1);
+        }
+        
+        // 結果のメッシュにユーザーデータを設定
+        resultMesh.userData = { 
+            id: Date.now(), 
+            type: 'subtracted',
+            fromId: fromId,
+            subtractId: subtractId
+        };
+        
+        // 結果のメッシュをcubes配列に追加
+        cubes.push(resultMesh);
+        
+        console.log('減算操作が成功しました');
+        
+        // APIを使用して減算操作を記録（オプション）
+        try {
+            const response = await fetch(`${API_BASE_URL}/subtract`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fromId: fromId,
+                    subtractId: subtractId
+                })
+            });
+            
+            if (!response.ok) {
+                console.warn(`APIエラー: ${response.status}`);
+            }
+        } catch (apiError) {
+            console.warn('APIを使用した減算操作の記録に失敗しました:', apiError);
+        }
+        
+        return resultMesh;
     } catch (error) {
-        console.error('APIを使用した減算操作に失敗しました:', error);
+        console.error('減算操作に失敗しました:', error);
         alert('立体の減算に失敗しました。詳細はコンソールを確認してください。');
+        return null;
     }
 }
 
@@ -504,13 +606,19 @@ async function addTriangularPrism() {
 }
 
 // DOMが読み込まれたら初期化
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     init();
     
     // WebSocketの初期化
     initWebSocket();
     
-    CSG = window.ThreeBSP;
+    // CSGモジュールの読み込み
+    try {
+        await loadCSGModule();
+    } catch (error) {
+        console.error('CSGモジュールの読み込みに失敗しました:', error);
+        alert('CSGモジュールの読み込みに失敗しました。くり抜き機能が使用できません。');
+    }
     
     // 立方体追加ボタンのイベントリスナーを設定
     document.getElementById('add-cube-btn').addEventListener('click', addCube);

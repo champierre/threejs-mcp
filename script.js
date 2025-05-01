@@ -518,9 +518,27 @@ async function subtractObjects(fromId, subtractId) {
         resultMesh.position.copy(fromObject.position);
         resultMesh.rotation.copy(fromObject.rotation);
         
-        // 元のオブジェクトをシーンから削除
+        // 元のオブジェクトを完全に削除
         scene.remove(fromObject);
+        if (fromObject.geometry) fromObject.geometry.dispose();
+        if (fromObject.material) {
+            if (Array.isArray(fromObject.material)) {
+                fromObject.material.forEach(material => material.dispose());
+            } else {
+                fromObject.material.dispose();
+            }
+        }
+        
+        // くりぬくオブジェクトを完全に削除
         scene.remove(subtractObject);
+        if (subtractObject.geometry) subtractObject.geometry.dispose();
+        if (subtractObject.material) {
+            if (Array.isArray(subtractObject.material)) {
+                subtractObject.material.forEach(material => material.dispose());
+            } else {
+                subtractObject.material.dispose();
+            }
+        }
         
         // 結果のメッシュをシーンに追加
         scene.add(resultMesh);

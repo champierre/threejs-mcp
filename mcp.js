@@ -407,6 +407,91 @@ server.tool("remove-all-cubes", "すべての立体をシーンから削除", {}
     }
 });
 
+// Add pyramid tool
+server.tool("add-pyramid", "新しい正n角錐をシーンに追加", {
+    radius: z.number().optional().describe("Radius of the pyramid base (default: 5)"),
+    height: z.number().optional().describe("Height of the pyramid (default: 10)"),
+    segments: z.number().min(3).optional().describe("Number of sides of the pyramid base (min: 3, default: 4)"),
+    color: z.object({
+        r: z.number().min(0).max(255).describe("Red component (0-255)"),
+        g: z.number().min(0).max(255).describe("Green component (0-255)"),
+        b: z.number().min(0).max(255).describe("Blue component (0-255)")
+    }).optional().describe("Color(RGB format) of the pyramid (default: random)"),
+    position: z.object({
+        x: z.number().describe("X position"),
+        y: z.number().describe("Y position"),
+        z: z.number().describe("Z position")
+    }).optional().describe("Position of the pyramid (default: random)"),
+    rotation: z.object({
+        x: z.number().describe("X rotation in radians"),
+        y: z.number().describe("Y rotation in radians"),
+        z: z.number().describe("Z rotation in radians")
+    }).optional().describe("Rotation of the pyramid (default: random)")
+}, async (params) => {
+    const url = `${API_BASE}/api/pyramids`;
+    
+    console.error("Received pyramid params:", JSON.stringify(params, null, 2));
+    
+    // Clone the params to avoid modifying the original
+    const paramsClone = params ? JSON.parse(JSON.stringify(params)) : {};
+    
+    // Ensure color is properly set
+    if (paramsClone && paramsClone.color) {
+        if (typeof paramsClone.color === 'object' && 'r' in paramsClone.color) {
+            const { r, g, b } = paramsClone.color;
+            // Convert RGB to hex color format (0xRRGGBB)
+            const hexColor = (r << 16) | (g << 8) | b;
+            console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${hexColor.toString(16)}`);
+            paramsClone.color = hexColor;
+        } else {
+            console.error(`Using provided color: ${paramsClone.color}`);
+        }
+    }
+    
+    console.error("Sending pyramid params to API:", JSON.stringify(paramsClone, null, 2));
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(paramsClone || {})
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const pyramid = await response.json();
+        const segmentsText = pyramid.segments ? `${pyramid.segments}角` : '';
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `正${segmentsText}錐が追加されました。ID: ${pyramid.id}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(pyramid, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error adding pyramid:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `正n角錐の追加に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 // Subtract tool - performs boolean subtraction on two objects
 server.tool("subtract-objects", "2つの立体を減算処理（くり抜き）する", {
     targetId: z.number().describe("ID of the target object to be subtracted from"),

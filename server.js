@@ -241,6 +241,49 @@ app.post('/api/spheres', (req, res) => {
     res.status(201).json(sphere);
 });
 
+// 正n角錐を追加するAPIエンドポイント
+app.post('/api/pyramids', (req, res) => {
+    console.log('Received pyramid request body:', JSON.stringify(req.body, null, 2));
+    const options = req.body || {};
+    
+    // デフォルト値を設定
+    const pyramid = {
+        id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
+        type: 'pyramid', // オブジェクトのタイプを指定
+        radius: options.radius || 5, // 底面の半径
+        height: options.height || 10, // 高さ
+        segments: options.segments || 4, // 底面の角の数（デフォルトは4角錐）
+        color: options.color || getRandomColor(),
+        position: options.position || {
+            x: Math.random() * 50 - 25,
+            y: Math.random() * 25 + 5,
+            z: Math.random() * 50 - 25
+        },
+        rotation: options.rotation || {
+            x: Math.random() * Math.PI,
+            y: Math.random() * Math.PI,
+            z: Math.random() * Math.PI
+        }
+    };
+    
+    // 正n角錐を配列に追加（同じcubes配列を使用）
+    cubes.push(pyramid);
+    
+    // データをファイルに保存
+    saveCubesData();
+    
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'add',
+        cube: pyramid
+    });
+    
+    console.log(`正${pyramid.segments}角錐が追加されました。ID: ${pyramid.id}, 現在のオブジェクト数: ${cubes.length}`);
+    
+    // 追加した正n角錐を返す
+    res.status(201).json(pyramid);
+});
+
 // すべての立体を取得するAPIエンドポイント
 app.get('/api/cubes', (req, res) => {
     res.json(cubes);

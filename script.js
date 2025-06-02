@@ -143,6 +143,16 @@ function addCubeFromData(cubeData) {
             cubeData.heightSegments  // 縦方向の分割数
         );
         objectType = `球体`;
+    } else if (cubeData.type === 'pyramid') {
+        // 正n角錐の場合
+        geometry = new THREE.ConeGeometry(
+            cubeData.radius,   // 底面の半径
+            cubeData.height,   // 高さ
+            cubeData.segments, // 底面の角の数
+            1,                 // 高さ方向の分割数
+            false              // 開いた円錐にするかどうか
+        );
+        objectType = `正${cubeData.segments}角錐`;
     } else if (cubeData.type === 'subtracted') {
         // CSGモジュールが読み込まれていることを確認
         if (!Brush || !Evaluator || !SUBTRACTION) {
@@ -276,6 +286,15 @@ function createMeshFromData(data) {
             data.radius,         // 半径
             data.widthSegments,  // 横方向の分割数
             data.heightSegments  // 縦方向の分割数
+        );
+    } else if (data.type === 'pyramid') {
+        // 正n角錐の場合
+        geometry = new THREE.ConeGeometry(
+            data.radius,   // 底面の半径
+            data.height,   // 高さ
+            data.segments, // 底面の角の数
+            1,             // 高さ方向の分割数
+            false          // 開いた円錐にするかどうか
         );
     } else {
         // デフォルトは立方体

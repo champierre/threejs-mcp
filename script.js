@@ -160,11 +160,13 @@ function addCubeFromData(cubeData) {
         const fromBrush = new Brush(fromMesh.geometry);
         fromBrush.position.copy(fromMesh.position);
         fromBrush.rotation.copy(fromMesh.rotation);
+        fromBrush.scale.copy(fromMesh.scale);
         fromBrush.updateMatrixWorld();
         
         const subtractBrush = new Brush(subtractMesh.geometry);
         subtractBrush.position.copy(subtractMesh.position);
         subtractBrush.rotation.copy(subtractMesh.rotation);
+        subtractBrush.scale.copy(subtractMesh.scale);
         subtractBrush.updateMatrixWorld();
         
         // Evaluatorを作成
@@ -189,6 +191,13 @@ function addCubeFromData(cubeData) {
         });
         
         mesh.material = material;
+        
+        // CSG処理の結果を元の立体の位置に配置
+        // （CSG処理は通常ワールド座標系で計算されるため、原点に配置される）
+        mesh.position.set(0, 0, 0);
+        mesh.rotation.set(0, 0, 0);
+        mesh.scale.set(1, 1, 1);
+        
         objectType = "減算された立体";
     } else {
         // デフォルトは立方体
@@ -219,15 +228,18 @@ function addCubeFromData(cubeData) {
         mesh = new THREE.Mesh(geometry, material);
     }
     
-    // オブジェクトの位置を設定
-    mesh.position.x = cubeData.position.x;
-    mesh.position.y = cubeData.position.y;
-    mesh.position.z = cubeData.position.z;
-    
-    // オブジェクトの回転を設定
-    mesh.rotation.x = cubeData.rotation.x;
-    mesh.rotation.y = cubeData.rotation.y;
-    mesh.rotation.z = cubeData.rotation.z;
+    // CSG処理された立体以外に対してのみ位置と回転を設定
+    if (cubeData.type !== 'subtracted') {
+        // オブジェクトの位置を設定
+        mesh.position.x = cubeData.position.x;
+        mesh.position.y = cubeData.position.y;
+        mesh.position.z = cubeData.position.z;
+        
+        // オブジェクトの回転を設定
+        mesh.rotation.x = cubeData.rotation.x;
+        mesh.rotation.y = cubeData.rotation.y;
+        mesh.rotation.z = cubeData.rotation.z;
+    }
     
     // APIから取得したIDを保存
     mesh.userData = { id: cubeData.id, type: cubeData.type };
@@ -494,11 +506,15 @@ async function subtractObjects(fromId, subtractId) {
         
         // Brushオブジェクトを作成
         const fromBrush = new Brush(fromObject.geometry);
+        fromBrush.position.copy(fromObject.position);
+        fromBrush.rotation.copy(fromObject.rotation);
+        fromBrush.scale.copy(fromObject.scale);
         fromBrush.updateMatrixWorld();
         
         const subtractBrush = new Brush(subtractObject.geometry);
         subtractBrush.position.copy(subtractObject.position);
         subtractBrush.rotation.copy(subtractObject.rotation);
+        subtractBrush.scale.copy(subtractObject.scale);
         subtractBrush.updateMatrixWorld();
         
         // Evaluatorを作成
@@ -514,9 +530,10 @@ async function subtractObjects(fromId, subtractId) {
             roughness: 0.4
         });
         
-        // 結果のメッシュの位置を設定
-        resultMesh.position.copy(fromObject.position);
-        resultMesh.rotation.copy(fromObject.rotation);
+        // CSG処理の結果を適切な位置に配置
+        resultMesh.position.set(0, 0, 0);
+        resultMesh.rotation.set(0, 0, 0);
+        resultMesh.scale.set(1, 1, 1);
         
         // 元のオブジェクトをシーンから削除
         scene.remove(fromObject);
@@ -550,7 +567,7 @@ async function subtractObjects(fromId, subtractId) {
         
         console.log('減算操作が成功しました');
         
-        // APIを使用して減算操作を記録（オプション）
+        // APIを使用して減算操作を記録し、元の立体を削除
         try {
             const response = await fetch(`${API_BASE_URL}/subtract`, {
                 method: 'POST',
@@ -559,12 +576,17 @@ async function subtractObjects(fromId, subtractId) {
                 },
                 body: JSON.stringify({
                     fromId: fromId,
-                    subtractId: subtractId
+                    subtractId: subtractId,
+                    deleteOriginals: true
                 })
             });
             
             if (!response.ok) {
-                console.warn(`APIエラー: ${response.status}`);
+                const errorText = await response.text();
+                console.warn(`APIエラー: ${response.status} - ${errorText}`);
+            } else {
+                const result = await response.json();
+                console.log('APIで減算操作が記録されました:', result);
             }
         } catch (apiError) {
             console.warn('APIを使用した減算操作の記録に失敗しました:', apiError);

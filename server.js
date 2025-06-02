@@ -316,6 +316,9 @@ app.post('/api/subtract', (req, res) => {
         return res.status(404).json({ error: '指定されたIDの立体が見つかりません' });
     }
     
+    console.log(`削除前の立体数: ${cubes.length}`);
+    console.log(`deleteOriginalsフラグ: ${options.deleteOriginals}`);
+    
     // 色の処理
     let color = options.color || fromObject.color;
     if (typeof color === 'object' && 'r' in color) {
@@ -338,13 +341,44 @@ app.post('/api/subtract', (req, res) => {
         rotation: options.rotation || fromObject.rotation
     };
     
+    // まず元の立体を削除（deleteOriginalsフラグに関係なく常に削除）
+    const fromIndex = cubes.findIndex(c => c.id === fromId);
+    const subtractIndex = cubes.findIndex(c => c.id === subtractId);
+    
+    console.log(`fromIndex: ${fromIndex}, subtractIndex: ${subtractIndex}`);
+    
+    // 削除対象のIDを記録
+    const deletedIds = [];
+    
+    // 削除インデックスを降順でソートして、配列のインデックスがずれないようにする
+    const indicesToDelete = [fromIndex, subtractIndex].filter(index => index !== -1).sort((a, b) => b - a);
+    
+    console.log(`削除するインデックス: ${indicesToDelete}`);
+    
+    indicesToDelete.forEach(index => {
+        const deletedCube = cubes[index];
+        deletedIds.push(deletedCube.id);
+        cubes.splice(index, 1);
+        console.log(`元の立体が削除されました。ID: ${deletedCube.id}`);
+    });
+    
     // 立体を配列に追加
     cubes.push(subtractedObject);
+    
+    console.log(`削除後の立体数: ${cubes.length}`);
     
     // データをファイルに保存
     saveCubesData();
     
-    // WebSocketクライアントに通知
+    // WebSocketクライアントに削除通知を送信
+    deletedIds.forEach(id => {
+        notifyClients({
+            type: 'delete',
+            id: id
+        });
+    });
+    
+    // WebSocketクライアントに追加通知を送信
     notifyClients({
         type: 'add',
         cube: subtractedObject
@@ -352,8 +386,11 @@ app.post('/api/subtract', (req, res) => {
     
     console.log(`減算された立体が追加されました。ID: ${subtractedObject.id}, 現在の立体数: ${cubes.length}`);
     
-    // 追加した立体を返す
-    res.status(201).json(subtractedObject);
+    // 削除されたIDと追加された立体の情報を返す
+    res.status(201).json({
+        subtractedObject: subtractedObject,
+        deletedIds: deletedIds
+    });
 });
 
 // サーバーを起動

@@ -172,6 +172,83 @@ add-prism
 }
 ```
 
+### 球体の追加
+
+```
+add-sphere
+```
+
+新しい球体をシーンに追加します。以下のパラメータを指定できます：
+
+- `radius`: 球体の半径（デフォルト: 5）
+- `widthSegments`: 横方向の分割数（デフォルト: 32）
+- `heightSegments`: 縦方向の分割数（デフォルト: 16）
+- `color`: 球体の色（デフォルト: ランダム）
+  - 10進数形式: 例 `255`（青色）
+  - RGB形式: 例 `{ "r": 0, "g": 0, "b": 255 }`（青色）
+- `position`: 球体の位置（デフォルト: ランダム）
+  - `x`: X座標
+  - `y`: Y座標
+  - `z`: Z座標
+- `rotation`: 球体の回転（ラジアン単位、デフォルト: ランダム）
+  - `x`: X軸周りの回転
+  - `y`: Y軸周りの回転
+  - `z`: Z軸周りの回転
+
+### 正n角錐の追加
+
+```
+add-pyramid
+```
+
+新しい正n角錐をシーンに追加します。以下のパラメータを指定できます：
+
+- `radius`: 底面の半径（デフォルト: 5）
+- `height`: 高さ（デフォルト: 10）
+- `segments`: 底面の角の数（最小: 3、デフォルト: 4）
+- `color`: 正n角錐の色（デフォルト: ランダム）
+  - 10進数形式: 例 `16711680`（赤色）
+  - RGB形式: 例 `{ "r": 255, "g": 0, "b": 0 }`（赤色）
+- `position`: 正n角錐の位置（デフォルト: ランダム）
+  - `x`: X座標
+  - `y`: Y座標
+  - `z`: Z座標
+- `rotation`: 正n角錐の回転（ラジアン単位、デフォルト: ランダム）
+  - `x`: X軸周りの回転
+  - `y`: Y軸周りの回転
+  - `z`: Z軸周りの回転
+
+例（RGB形式での色指定）：
+```json
+{
+  "radius": 6,
+  "height": 12,
+  "segments": 5,
+  "color": { "r": 255, "g": 128, "b": 0 },
+  "position": { "x": -5, "y": 6, "z": 0 },
+  "rotation": { "x": 0, "y": 0.5, "z": 0 }
+}
+```
+
+### 立体の減算（くり抜き）
+
+```
+subtract-objects
+```
+
+2つの立体を減算処理（くり抜き）します。以下のパラメータを指定する必要があります：
+
+- `targetId`: くり抜かれる立体のID
+- `subtractId`: くり抜く立体のID
+
+例：
+```json
+{
+  "targetId": 1618456789012,
+  "subtractId": 1618456789013
+}
+```
+
 ### すべての立体の削除
 
 ```
@@ -394,6 +471,98 @@ POST /api/spheres
   "color": { "r": 0, "g": 0, "b": 255 },
   "position": { "x": -10, "y": 8, "z": 5 },
   "rotation": { "x": 0, "y": 0, "z": 0 }
+}
+```
+
+### 正n角錐の追加
+
+```
+POST /api/pyramids
+```
+
+curlコマンド例:
+```bash
+curl -X POST http://localhost:3000/api/pyramids \
+  -H "Content-Type: application/json" \
+  -d '{
+    "radius": 6,
+    "height": 12,
+    "segments": 5,
+    "color": 16744448,
+    "position": { "x": -5, "y": 6, "z": 0 },
+    "rotation": { "x": 0, "y": 0.5, "z": 0 }
+  }'
+```
+
+リクエスト例:
+```json
+{
+  "radius": 6,
+  "height": 12,
+  "segments": 5,
+  "color": 16744448,
+  "position": { "x": -5, "y": 6, "z": 0 },
+  "rotation": { "x": 0, "y": 0.5, "z": 0 }
+}
+```
+
+レスポンス例:
+```json
+{
+  "id": 1618456789015,
+  "type": "pyramid",
+  "radius": 6,
+  "height": 12,
+  "segments": 5,
+  "color": 16744448,
+  "position": { "x": -5, "y": 6, "z": 0 },
+  "rotation": { "x": 0, "y": 0.5, "z": 0 }
+}
+```
+
+### 立体の減算（くり抜き）
+
+```
+POST /api/subtract
+```
+
+2つの立体を減算処理（くり抜き）します。
+
+curlコマンド例:
+```bash
+curl -X POST http://localhost:3000/api/subtract \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fromId": 1618456789012,
+    "subtractId": 1618456789013
+  }'
+```
+
+リクエスト例:
+```json
+{
+  "fromId": 1618456789012,
+  "subtractId": 1618456789013
+}
+```
+
+レスポンス例:
+```json
+{
+  "subtractedObject": {
+    "id": 1618456789016,
+    "type": "subtracted",
+    "fromId": 1618456789012,
+    "subtractId": 1618456789013,
+    "fromType": "cube",
+    "subtractType": "sphere",
+    "fromData": { ... },
+    "subtractData": { ... },
+    "color": 16711680,
+    "position": { "x": 0, "y": 10, "z": 0 },
+    "rotation": { "x": 0, "y": 0, "z": 0 }
+  },
+  "deletedIds": [1618456789012, 1618456789013]
 }
 ```
 

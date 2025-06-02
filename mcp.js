@@ -407,6 +407,64 @@ server.tool("remove-all-cubes", "すべての立体をシーンから削除", {}
     }
 });
 
+// Subtract tool - performs boolean subtraction on two objects
+server.tool("subtract-objects", "2つの立体を減算処理（くり抜き）する", {
+    targetId: z.number().describe("ID of the target object to be subtracted from"),
+    subtractId: z.number().describe("ID of the object to subtract with")
+}, async (params) => {
+    const url = `${API_BASE}/api/subtract`;
+    
+    console.error("Received subtract params:", JSON.stringify(params, null, 2));
+    
+    // Convert parameter names to match server API
+    const apiParams = {
+        fromId: params.targetId,
+        subtractId: params.subtractId
+    };
+    
+    console.error("Sending params to API:", JSON.stringify(apiParams, null, 2));
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(apiParams)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `減算処理が完了しました。対象ID: ${params.targetId}, 減算ID: ${params.subtractId}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(result, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error subtracting objects:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `減算処理に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 // Server start function
 async function main() {
     const transport = new StdioServerTransport();

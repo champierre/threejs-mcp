@@ -96,8 +96,8 @@ const getRandomColor = () => {
     return Math.floor(Math.random() * 16777215);
 };
 
-// 立体を追加するAPIエンドポイント
-app.post('/api/cubes', (req, res) => {
+// 直方体を追加するAPIエンドポイント
+app.post('/api/boxes', (req, res) => {
     console.log('Received request body:', JSON.stringify(req.body, null, 2));
     const options = req.body || {};
     
@@ -122,8 +122,10 @@ app.post('/api/cubes', (req, res) => {
     // デフォルト値を設定
     const cube = {
         id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
-        type: 'cube', // オブジェクトのタイプを指定
-        size: options.size || 10,
+        type: 'box', // オブジェクトのタイプを指定
+        width: options.width || 10,
+        height: options.height || 10,
+        depth: options.depth || 10,
         color: color,
         position: options.position || {
             x: Math.random() * 50 - 25,
@@ -149,9 +151,9 @@ app.post('/api/cubes', (req, res) => {
         cube: cube
     });
     
-    console.log(`立体が追加されました。ID: ${cube.id}, 現在の立体数: ${cubes.length}`);
+    console.log(`直方体が追加されました。ID: ${cube.id}, 現在の立体数: ${cubes.length}`);
     
-    // 追加した立体を返す
+    // 追加した直方体を返す
     res.status(201).json(cube);
 });
 
@@ -285,12 +287,12 @@ app.post('/api/pyramids', (req, res) => {
 });
 
 // すべての立体を取得するAPIエンドポイント
-app.get('/api/cubes', (req, res) => {
+app.get('/api/boxes', (req, res) => {
     res.json(cubes);
 });
 
 // 特定の立体を取得するAPIエンドポイント
-app.get('/api/cubes/:id', (req, res) => {
+app.get('/api/boxes/:id', (req, res) => {
     const id = parseInt(req.params.id);
     const cube = cubes.find(c => c.id === id);
     
@@ -302,7 +304,7 @@ app.get('/api/cubes/:id', (req, res) => {
 });
 
 // 特定の立体を削除するAPIエンドポイント
-app.delete('/api/cubes/:id', (req, res) => {
+app.delete('/api/boxes/:id', (req, res) => {
     const id = parseInt(req.params.id);
     const index = cubes.findIndex(c => c.id === id);
     
@@ -326,7 +328,7 @@ app.delete('/api/cubes/:id', (req, res) => {
 });
 
 // すべての立体を削除するAPIエンドポイント
-app.delete('/api/cubes', (req, res) => {
+app.delete('/api/boxes', (req, res) => {
     cubes.length = 0;
     
     // データをファイルに保存
@@ -435,6 +437,7 @@ app.post('/api/subtract', (req, res) => {
         deletedIds: deletedIds
     });
 });
+
 
 // サーバーを起動
 server.listen(port, () => {

@@ -1,6 +1,7 @@
 {
   "name": "threejs-mcp-server",
   "version": "1.0.0",
+  "type": "module",
   "description": "Three.js MCPサーバーアプリケーション",
   "main": "server.js",
   "scripts": {

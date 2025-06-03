@@ -150,10 +150,19 @@
     
     <div class="container">
         <div class="card">
-            <h2>立方体を追加</h2>
+            <h2>直方体を追加</h2>
+            <h3>寸法</h3>
             <div class="form-group">
-                <label for="cube-size">サイズ:</label>
-                <input type="number" id="cube-size" value="10" min="1" max="50">
+                <label for="cube-width">幅 (Width):</label>
+                <input type="number" id="cube-width" value="10" min="1" max="50">
+            </div>
+            <div class="form-group">
+                <label for="cube-height">高さ (Height):</label>
+                <input type="number" id="cube-height" value="10" min="1" max="50">
+            </div>
+            <div class="form-group">
+                <label for="cube-depth">奥行き (Depth):</label>
+                <input type="number" id="cube-depth" value="10" min="1" max="50">
             </div>
             
             <div class="form-group">
@@ -189,8 +198,8 @@
                 <input type="number" id="rotation-z" value="0" step="0.1">
             </div>
             
-            <button id="add-cube">立方体を追加</button>
-            <button id="add-random-cube">ランダム立方体を追加</button>
+            <button id="add-cube">直方体を追加</button>
+            <button id="add-random-cube">ランダム直方体を追加</button>
             
             <div id="add-response" class="response" style="display: none;">
                 <h3>レスポンス:</h3>
@@ -432,9 +441,11 @@
             fetchAllCubes();
         });
         
-        // 立方体を追加ボタン
+        // 直方体を追加ボタン
         document.getElementById('add-cube').addEventListener('click', async function() {
-            const size = parseFloat(document.getElementById('cube-size').value);
+            const width = parseFloat(document.getElementById('cube-width').value);
+            const height = parseFloat(document.getElementById('cube-height').value);
+            const depth = parseFloat(document.getElementById('cube-depth').value);
             const colorHex = document.getElementById('cube-color').value;
             const color = parseInt(colorHex, 16);
             
@@ -447,14 +458,16 @@
             const rotZ = parseFloat(document.getElementById('rotation-z').value);
             
             const cubeData = {
-                size: size,
+                width: width,
+                height: height,
+                depth: depth,
                 color: color,
                 position: { x: posX, y: posY, z: posZ },
                 rotation: { x: rotX, y: rotY, z: rotZ }
             };
             
             try {
-                const response = await fetch(`${API_BASE_URL}/cubes`, {
+                const response = await fetch(`${API_BASE_URL}/boxes`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -483,10 +496,10 @@
             }
         });
         
-        // ランダム立方体を追加ボタン
+        // ランダム直方体を追加ボタン
         document.getElementById('add-random-cube').addEventListener('click', async function() {
             try {
-                const response = await fetch(`${API_BASE_URL}/cubes`, {
+                const response = await fetch(`${API_BASE_URL}/boxes`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -523,7 +536,7 @@
         // すべての立体を削除ボタン
         document.getElementById('delete-all-cubes').addEventListener('click', async function() {
             try {
-                const response = await fetch(`${API_BASE_URL}/cubes`, {
+                const response = await fetch(`${API_BASE_URL}/boxes`, {
                     method: 'DELETE'
                 });
                 
@@ -558,7 +571,7 @@
             }
             
             try {
-                const response = await fetch(`${API_BASE_URL}/cubes/${cubeId}`);
+                const response = await fetch(`${API_BASE_URL}/boxes/${cubeId}`);
                 
                 const responseData = await response.json();
                 
@@ -581,7 +594,7 @@
         // すべての立体を取得して表示する関数
         async function fetchAllCubes(showResponse = false) {
             try {
-                const response = await fetch(`${API_BASE_URL}/cubes`);
+                const response = await fetch(`${API_BASE_URL}/boxes`);
                 
                 const cubes = await response.json();
                 
@@ -628,10 +641,16 @@
                 
                 const colorHex = cube.color.toString(16).padStart(6, '0');
                 
+                // オブジェクトのタイプに応じて表示を変更
+                let displayInfo = '直方体';
+                if (cube.width && cube.height && cube.depth) {
+                    displayInfo += `: 幅 ${cube.width}, 高さ ${cube.height}, 奥行き ${cube.depth}`;
+                }
+                
                 li.innerHTML = `
                     <div>
                         <span class="cube-color" style="background-color: #${colorHex};"></span>
-                        ID: ${cube.id}, サイズ: ${cube.size}
+                        ID: ${cube.id}, ${displayInfo}
                     </div>
                     <div class="cube-actions">
                         <button class="view-cube" data-id="${cube.id}">詳細</button>
@@ -657,7 +676,7 @@
                     const cubeId = this.getAttribute('data-id');
                     
                     try {
-                        const response = await fetch(`${API_BASE_URL}/cubes/${cubeId}`, {
+                        const response = await fetch(`${API_BASE_URL}/boxes/${cubeId}`, {
                             method: 'DELETE'
                         });
                         
@@ -802,10 +821,16 @@
                 const colorHex = cube.color.toString(16).padStart(6, '0');
                 
                 // オブジェクトのタイプに応じて表示を変更
-                let objectType = '立方体';
-                let sizeInfo = `サイズ: ${cube.size}`;
+                let objectType = '直方体';
+                let sizeInfo = '';
                 
-                if (cube.type === 'prism') {
+                if (cube.type === 'box' || cube.type === 'cube') {
+                    if (cube.width && cube.height && cube.depth) {
+                        sizeInfo = `幅: ${cube.width}, 高さ: ${cube.height}, 奥行き: ${cube.depth}`;
+                    } else {
+                        sizeInfo = '寸法未指定';
+                    }
+                } else if (cube.type === 'prism') {
                     objectType = `正${cube.segments}角柱`;
                     sizeInfo = `半径: ${cube.radius}, 高さ: ${cube.height}`;
                 }
@@ -839,7 +864,7 @@
                     const cubeId = this.getAttribute('data-id');
                     
                     try {
-                        const response = await fetch(`${API_BASE_URL}/cubes/${cubeId}`, {
+                        const response = await fetch(`${API_BASE_URL}/boxes/${cubeId}`, {
                             method: 'DELETE'
                         });
                         
@@ -984,10 +1009,16 @@
                 const colorHex = cube.color.toString(16).padStart(6, '0');
                 
                 // オブジェクトのタイプに応じて表示を変更
-                let objectType = '立方体';
-                let sizeInfo = `サイズ: ${cube.size}`;
+                let objectType = '直方体';
+                let sizeInfo = '';
                 
-                if (cube.type === 'prism') {
+                if (cube.type === 'box' || cube.type === 'cube') {
+                    if (cube.width && cube.height && cube.depth) {
+                        sizeInfo = `幅: ${cube.width}, 高さ: ${cube.height}, 奥行き: ${cube.depth}`;
+                    } else {
+                        sizeInfo = '寸法未指定';
+                    }
+                } else if (cube.type === 'prism') {
                     objectType = `正${cube.segments}角柱`;
                     sizeInfo = `半径: ${cube.radius}, 高さ: ${cube.height}`;
                 } else if (cube.type === 'sphere') {
@@ -1029,7 +1060,7 @@
                     const cubeId = this.getAttribute('data-id');
                     
                     try {
-                        const response = await fetch(`${API_BASE_URL}/cubes/${cubeId}`, {
+                        const response = await fetch(`${API_BASE_URL}/boxes/${cubeId}`, {
                             method: 'DELETE'
                         });
                         

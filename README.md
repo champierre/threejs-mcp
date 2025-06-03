@@ -16,11 +16,11 @@
 
 このMCPサーバーをClaude Desktopで使用すると、自然言語で3Dオブジェクトを作成できます。
 
-### 例1: 立方体の上に球体の上半分が乗った立体
+### 例1: 直方体の上に球体の上半分が乗った立体
 
-「立方体の上に球体の上半分が乗った立体をつくってください。」という指示で作成された立体：
+「直方体の上に球体の上半分が乗った立体をつくってください。」という指示で作成された立体：
 
-![立方体の上に球体の上半分が乗った立体](images/basic.png)
+![直方体の上に球体の上半分が乗った立体](images/basic.png)
 
 ### 例2: 雪だるま
 
@@ -74,36 +74,40 @@
 ### 立体の取得
 
 ```
-get-cubes
+get-boxes
 ```
 
 すべての立体の情報を取得します。
 
-### 立体の追加
+### 直方体の追加
 
 ```
-add-cube
+add-box
 ```
 
-新しい立方体をシーンに追加します。以下のパラメータを指定できます：
+新しい直方体をシーンに追加します。以下のパラメータを指定できます：
 
-- `size`: 立方体のサイズ（デフォルト: 10）
-- `color`: 立方体の色（デフォルト: ランダム）
+- `width`: 直方体の幅（デフォルト: 10）
+- `height`: 直方体の高さ（デフォルト: 10）
+- `depth`: 直方体の奨行き（デフォルト: 10）
+- `color`: 直方体の色（デフォルト: ランダム）
   - 10進数形式: 例 `16711680`（赤色）
   - RGB形式: 例 `{ "r": 255, "g": 0, "b": 0 }`（赤色）
-- `position`: 立方体の位置（デフォルト: ランダム）
+- `position`: 直方体の位置（デフォルト: ランダム）
   - `x`: X座標
   - `y`: Y座標
   - `z`: Z座標
-- `rotation`: 立方体の回転（ラジアン単位、デフォルト: ランダム）
+- `rotation`: 直方体の回転（ラジアン単位、デフォルト: ランダム）
   - `x`: X軸周りの回転
   - `y`: Y軸周りの回転
   - `z`: Z軸周りの回転
 
-例（10進数形式での色指定）：
+例（個別の寸法を指定）：
 ```json
 {
-  "size": 15,
+  "width": 20,
+  "height": 10,
+  "depth": 15,
   "color": 16711680,
   "position": { "x": 0, "y": 10, "z": 0 },
   "rotation": { "x": 0, "y": 0, "z": 0 }
@@ -113,7 +117,9 @@ add-cube
 例（RGB形式での色指定）：
 ```json
 {
-  "size": 15,
+  "width": 10,
+  "height": 20,
+  "depth": 10,
   "color": { "r": 255, "g": 0, "b": 0 },
   "position": { "x": 0, "y": 10, "z": 0 },
   "rotation": { "x": 0, "y": 0, "z": 0 }
@@ -123,7 +129,7 @@ add-cube
 ### 立体の削除
 
 ```
-remove-cube
+remove-box
 ```
 
 指定したIDの立体をシーンから削除します。以下のパラメータを指定する必要があります：
@@ -252,7 +258,7 @@ subtract-objects
 ### すべての立体の削除
 
 ```
-remove-all-cubes
+remove-all-boxes
 ```
 
 シーン内のすべての立体を削除します。パラメータは必要ありません。
@@ -283,18 +289,20 @@ remove-all-cubes
 
 このアプリケーションは、外部からアクセスできるHTTP APIを提供しています。すべてのAPI操作はデータファイルに永続化され、WebSocketを通じてリアルタイムに通知されます。
 
-### 立体の追加
+### 直方体の追加
 
 ```
-POST /api/cubes
+POST /api/boxes
 ```
 
 curlコマンド例:
 ```bash
-curl -X POST http://localhost:3000/api/cubes \
+curl -X POST http://localhost:3000/api/boxes \
   -H "Content-Type: application/json" \
   -d '{
-    "size": 15,
+    "width": 20,
+    "height": 10,
+    "depth": 15,
     "color": 16711680,
     "position": { "x": 0, "y": 10, "z": 0 },
     "rotation": { "x": 0, "y": 0, "z": 0 }
@@ -304,7 +312,9 @@ curl -X POST http://localhost:3000/api/cubes \
 リクエスト例:
 ```json
 {
-  "size": 15,
+  "width": 20,
+  "height": 10,
+  "depth": 15,
   "color": 16711680,
   "position": { "x": 0, "y": 10, "z": 0 },
   "rotation": { "x": 0, "y": 0, "z": 0 }
@@ -315,7 +325,10 @@ curl -X POST http://localhost:3000/api/cubes \
 ```json
 {
   "id": 1618456789012,
-  "size": 15,
+  "type": "box",
+  "width": 20,
+  "height": 10,
+  "depth": 15,
   "color": 16711680,
   "position": { "x": 0, "y": 10, "z": 0 },
   "rotation": { "x": 0, "y": 0, "z": 0 }
@@ -325,12 +338,12 @@ curl -X POST http://localhost:3000/api/cubes \
 ### すべての立体を取得
 
 ```
-GET /api/cubes
+GET /api/boxes
 ```
 
 curlコマンド例:
 ```bash
-curl -X GET http://localhost:3000/api/cubes
+curl -X GET http://localhost:3000/api/boxes
 ```
 
 レスポンス例:
@@ -338,14 +351,18 @@ curl -X GET http://localhost:3000/api/cubes
 [
   {
     "id": 1618456789012,
-    "size": 15,
+    "type": "box",
+    "width": 20,
+    "height": 10,
+    "depth": 15,
     "color": 16711680,
     "position": { "x": 0, "y": 10, "z": 0 },
     "rotation": { "x": 0, "y": 0, "z": 0 }
   },
   {
     "id": 1618456789013,
-    "size": 10,
+    "type": "sphere",
+    "radius": 8,
     "color": 65280,
     "position": { "x": 10, "y": 5, "z": -5 },
     "rotation": { "x": 0.5, "y": 0.3, "z": 0.1 }
@@ -356,19 +373,22 @@ curl -X GET http://localhost:3000/api/cubes
 ### 特定の立体を取得
 
 ```
-GET /api/cubes/:id
+GET /api/boxes/:id
 ```
 
 curlコマンド例:
 ```bash
-curl -X GET http://localhost:3000/api/cubes/1618456789012
+curl -X GET http://localhost:3000/api/boxes/1618456789012
 ```
 
 レスポンス例:
 ```json
 {
   "id": 1618456789012,
-  "size": 15,
+  "type": "box",
+  "width": 20,
+  "height": 10,
+  "depth": 15,
   "color": 16711680,
   "position": { "x": 0, "y": 10, "z": 0 },
   "rotation": { "x": 0, "y": 0, "z": 0 }
@@ -378,12 +398,12 @@ curl -X GET http://localhost:3000/api/cubes/1618456789012
 ### 特定の立体を削除
 
 ```
-DELETE /api/cubes/:id
+DELETE /api/boxes/:id
 ```
 
 curlコマンド例:
 ```bash
-curl -X DELETE http://localhost:3000/api/cubes/1618456789012
+curl -X DELETE http://localhost:3000/api/boxes/1618456789012
 ```
 
 レスポンス例:
@@ -554,7 +574,7 @@ curl -X POST http://localhost:3000/api/subtract \
     "type": "subtracted",
     "fromId": 1618456789012,
     "subtractId": 1618456789013,
-    "fromType": "cube",
+    "fromType": "box",
     "subtractType": "sphere",
     "fromData": { ... },
     "subtractData": { ... },
@@ -569,7 +589,7 @@ curl -X POST http://localhost:3000/api/subtract \
 ### すべての立体の削除
 
 ```
-DELETE /api/cubes
+DELETE /api/boxes
 ```
 
 シーン内のすべての立体を削除します。パラメータは必要ありません。

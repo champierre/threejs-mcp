@@ -20,7 +20,9 @@ async function makeRequest(url) {
     try {
         const response = await fetch(url, { headers });
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
         }
         return (await response.json());
     }
@@ -30,8 +32,8 @@ async function makeRequest(url) {
     }
 }
 // Define tools
-server.tool("get-cubes", "すべての立体を取得", {}, async () => {
-    const url = `${API_BASE}/api/cubes`;
+server.tool("get-boxes", "すべての立体を取得", {}, async () => {
+    const url = `${API_BASE}/api/boxes`;
     const response = await makeRequest(url);
     if (!response) {
         return {
@@ -64,26 +66,28 @@ server.tool("get-cubes", "すべての立体を取得", {}, async () => {
     };
 });
 
-// Add cube tool
-server.tool("add-cube", "新しい立方体をシーンに追加", {
-    size: z.number().optional().describe("Size of the cube (default: 10)"),
+// Add box tool
+server.tool("add-box", "新しい直方体をシーンに追加", {
+    width: z.number().optional().describe("Width of the box (default: 10)"),
+    height: z.number().optional().describe("Height of the box (default: 10)"),
+    depth: z.number().optional().describe("Depth of the box (default: 10)"),
     color: z.object({
         r: z.number().min(0).max(255).describe("Red component (0-255)"),
         g: z.number().min(0).max(255).describe("Green component (0-255)"),
         b: z.number().min(0).max(255).describe("Blue component (0-255)")
-    }).optional().describe("Color(RGB format) of the cube (default: random)"),
+    }).optional().describe("Color(RGB format) of the box (default: random)"),
     position: z.object({
         x: z.number().describe("X position"),
         y: z.number().describe("Y position"),
         z: z.number().describe("Z position")
-    }).optional().describe("Position of the cube (default: random)"),
+    }).optional().describe("Position of the box (default: random)"),
     rotation: z.object({
         x: z.number().describe("X rotation in radians"),
         y: z.number().describe("Y rotation in radians"),
         z: z.number().describe("Z rotation in radians")
-    }).optional().describe("Rotation of the cube (default: random)")
+    }).optional().describe("Rotation of the box (default: random)")
 }, async (params) => {
-    const url = `${API_BASE}/api/cubes`;
+    const url = `${API_BASE}/api/boxes`;
     
     console.error("Received params:", JSON.stringify(params, null, 2));
     
@@ -108,6 +112,7 @@ server.tool("add-cube", "新しい立方体をシーンに追加", {
     // Do not set a default color, let the server handle it
     
     console.error("Sending params to API:", JSON.stringify(paramsClone, null, 2));
+    console.error("Making request to URL:", url);
     
     try {
         const response = await fetch(url, {
@@ -120,7 +125,9 @@ server.tool("add-cube", "新しい立方体をシーンに追加", {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
         }
         
         const cube = await response.json();
@@ -129,7 +136,7 @@ server.tool("add-cube", "新しい立方体をシーンに追加", {
             content: [
                 {
                     type: "text",
-                    text: `立方体が追加されました。ID: ${cube.id}`,
+                    text: `直方体が追加されました。ID: ${cube.id}`,
                 },
                 {
                     type: "text",
@@ -138,12 +145,12 @@ server.tool("add-cube", "新しい立方体をシーンに追加", {
             ],
         };
     } catch (error) {
-        console.error("Error adding cube:", error);
+        console.error("Error adding box:", error);
         return {
             content: [
                 {
                     type: "text",
-                    text: `立方体の追加に失敗しました: ${error.message}`,
+                    text: `直方体の追加に失敗しました: ${error.message}`,
                 },
             ],
         };
@@ -204,7 +211,9 @@ server.tool("add-prism", "新しい正n角柱をシーンに追加", {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
         }
         
         const prism = await response.json();
@@ -289,7 +298,9 @@ server.tool("add-sphere", "新しい球体をシーンに追加", {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
         }
         
         const sphere = await response.json();
@@ -319,11 +330,11 @@ server.tool("add-sphere", "新しい球体をシーンに追加", {
     }
 });
 
-// Remove cube tool
-server.tool("remove-cube", "IDを指定して立体をシーンから削除", {
+// Remove box tool
+server.tool("remove-box", "IDを指定して立体をシーンから削除", {
     id: z.number().describe("ID of the object to remove")
 }, async (params) => {
-    const url = `${API_BASE}/api/cubes/${params.id}`;
+    const url = `${API_BASE}/api/boxes/${params.id}`;
     
     try {
         const response = await fetch(url, {
@@ -334,7 +345,9 @@ server.tool("remove-cube", "IDを指定して立体をシーンから削除", {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
         }
         
         const result = await response.json();
@@ -364,9 +377,9 @@ server.tool("remove-cube", "IDを指定して立体をシーンから削除", {
     }
 });
 
-// Remove all cubes tool
-server.tool("remove-all-cubes", "すべての立体をシーンから削除", {}, async () => {
-    const url = `${API_BASE}/api/cubes`;
+// Remove all boxes tool
+server.tool("remove-all-boxes", "すべての立体をシーンから削除", {}, async () => {
+    const url = `${API_BASE}/api/boxes`;
     
     try {
         const response = await fetch(url, {
@@ -377,7 +390,9 @@ server.tool("remove-all-cubes", "すべての立体をシーンから削除", {}
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
         }
         
         const result = await response.json();
@@ -461,7 +476,9 @@ server.tool("add-pyramid", "新しい正n角錐をシーンに追加", {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
         }
         
         const pyramid = await response.json();
@@ -520,7 +537,9 @@ server.tool("subtract-objects", "2つの立体を減算処理（くり抜き）�
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
         }
         
         const result = await response.json();
@@ -549,6 +568,7 @@ server.tool("subtract-objects", "2つの立体を減算処理（くり抜き）�
         };
     }
 });
+
 
 // Server start function
 async function main() {

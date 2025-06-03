@@ -1,7 +1,7 @@
 // Three.jsの基本要素
 let scene, camera, renderer, controls;
 const cubes = [];
-// 立方体のサイズ
+// 直方体のサイズ
 const cubeSize = 10;
 // APIのベースURL
 const API_BASE_URL = 'http://localhost:3000/api';
@@ -19,7 +19,7 @@ async function loadCSGModule() {
     SUBTRACTION = SUBTRACTIONModule;
     console.log('CSGモジュールが読み込まれました');
 }
-// 立方体の色をランダムに生成する関数
+// 直方体の色をランダムに生成する関数
 const getRandomColor = () => {
     return Math.floor(Math.random() * 16777215);
 };
@@ -40,19 +40,19 @@ function initWebSocket() {
         
         switch (message.type) {
             case 'init':
-                // 初期データを受信した場合、すべての立方体を表示
+                // 初期データを受信した場合、すべての立体を表示
                 handleInitMessage(message);
                 break;
             case 'add':
-                // 新しい立方体が追加された場合
+                // 新しい立体が追加された場合
                 handleAddMessage(message);
                 break;
             case 'delete':
-                // 立方体が削除された場合
+                // 立体が削除された場合
                 handleDeleteMessage(message);
                 break;
             case 'clear':
-                // すべての立方体が削除された場合
+                // すべての立体が削除された場合
                 handleClearMessage();
                 break;
         }
@@ -73,54 +73,54 @@ function initWebSocket() {
 
 // 初期データを処理する関数
 function handleInitMessage(message) {
-    // シーンから既存の立方体をすべて削除
+    // シーンから既存の立体をすべて削除
     cubes.forEach(cube => scene.remove(cube));
     cubes.length = 0;
     
-    // 受信したすべての立方体を追加
+    // 受信したすべての立体を追加
     message.cubes.forEach(cubeData => {
         addCubeFromData(cubeData);
     });
     
-    console.log(`${message.cubes.length}個の立方体を初期化しました`);
+    console.log(`${message.cubes.length}個の立体を初期化しました`);
 }
 
-// 立方体追加メッセージを処理する関数
+// 立体追加メッセージを処理する関数
 function handleAddMessage(message) {
-    // すでに表示されている立方体はスキップ
+    // すでに表示されている立体はスキップ
     if (cubes.some(cube => cube.userData && cube.userData.id === message.cube.id)) {
         return;
     }
     
-    // 立方体を作成して表示
+    // 立体を作成して表示
     addCubeFromData(message.cube);
-    console.log(`新しい立方体が追加されました。ID: ${message.cube.id}`);
+    console.log(`新しい立体が追加されました。ID: ${message.cube.id}`);
 }
 
-// 立方体削除メッセージを処理する関数
+// 立体削除メッセージを処理する関数
 function handleDeleteMessage(message) {
     const index = cubes.findIndex(cube => cube.userData && cube.userData.id === message.id);
     if (index !== -1) {
         // シーンから立方体を削除
         scene.remove(cubes[index]);
         cubes.splice(index, 1);
-        console.log(`立方体が削除されました。ID: ${message.id}`);
+        console.log(`立体が削除されました。ID: ${message.id}`);
     }
 }
 
-// すべての立方体削除メッセージを処理する関数
+// すべての立体削除メッセージを処理する関数
 function handleClearMessage() {
-    // シーンから既存の立方体をすべて削除
+    // シーンから既存の立体をすべて削除
     cubes.forEach(cube => scene.remove(cube));
     cubes.length = 0;
-    console.log('すべての立方体が削除されました');
+    console.log('すべての立体が削除されました');
 }
 
 
 // APIから取得したデータに基づいてオブジェクトを追加する関数
 function addCubeFromData(cubeData) {
     let geometry;
-    let objectType = "立方体";
+    let objectType = "直方体";
     let mesh;
     
     // オブジェクトのタイプに応じてジオメトリを作成
@@ -209,9 +209,21 @@ function addCubeFromData(cubeData) {
         mesh.scale.set(1, 1, 1);
         
         objectType = "減算された立体";
+    } else if (cubeData.type === 'box' || cubeData.type === 'cube') {
+        // 直方体（後方互換性のためcubeタイプもサポート）
+        const width = cubeData.width || 10;
+        const height = cubeData.height || 10;
+        const depth = cubeData.depth || 10;
+        geometry = new THREE.BoxGeometry(width, height, depth);
+        objectType = "直方体";
+        console.log(`Creating box with dimensions: ${width}x${height}x${depth}`);
     } else {
-        // デフォルトは立方体
-        geometry = new THREE.BoxGeometry(cubeData.size, cubeData.size, cubeData.size);
+        // デフォルトは直方体
+        const width = cubeData.width || cubeData.size || 10;
+        const height = cubeData.height || cubeData.size || 10;
+        const depth = cubeData.depth || cubeData.size || 10;
+        geometry = new THREE.BoxGeometry(width, height, depth);
+        objectType = "直方体";
     }
     
     if (!mesh) {
@@ -296,9 +308,19 @@ function createMeshFromData(data) {
             1,             // 高さ方向の分割数
             false          // 開いた円錐にするかどうか
         );
+    } else if (data.type === 'box' || data.type === 'cube') {
+        // 直方体（後方互換性のためcubeタイプもサポート）
+        const width = data.width || 10;
+        const height = data.height || 10;
+        const depth = data.depth || 10;
+        console.log(`Creating box with dimensions: ${width} x ${height} x ${depth}`, data);
+        geometry = new THREE.BoxGeometry(width, height, depth);
     } else {
-        // デフォルトは立方体
-        geometry = new THREE.BoxGeometry(data.size, data.size, data.size);
+        // デフォルトは直方体
+        const width = data.width || 10;
+        const height = data.height || 10;
+        const depth = data.depth || 10;
+        geometry = new THREE.BoxGeometry(width, height, depth);
     }
     
     // マテリアルの作成
@@ -380,11 +402,11 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// UIボタンから呼び出される立方体追加関数
+// UIボタンから呼び出される直方体追加関数
 async function addCube() {
     try {
-        // APIを使用して立方体を追加
-        const response = await fetch(`${API_BASE_URL}/cubes`, {
+        // APIを使用して直方体を追加
+        const response = await fetch(`${API_BASE_URL}/boxes`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

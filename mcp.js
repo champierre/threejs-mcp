@@ -614,6 +614,167 @@ server.tool("take-screenshot", "現在の3Dシーンのスクリーンショッ�
     }
 });
 
+// Add ellipsoid tool
+server.tool("add-ellipsoid", "新しい楕円体をシーンに追加", {
+    radiusX: z.number().optional().describe("X軸の半径 (default: 5)"),
+    radiusY: z.number().optional().describe("Y軸の半径 (default: 5)"),
+    radiusZ: z.number().optional().describe("Z軸の半径 (default: 5)"),
+    widthSegments: z.number().optional().describe("横方向の分割数 (default: 32)"),
+    heightSegments: z.number().optional().describe("縦方向の分割数 (default: 16)"),
+    color: z.object({
+        r: z.number().min(0).max(255).describe("Red component (0-255)"),
+        g: z.number().min(0).max(255).describe("Green component (0-255)"),
+        b: z.number().min(0).max(255).describe("Blue component (0-255)")
+    }).optional().describe("Color(RGB format) of the ellipsoid (default: random)"),
+    position: z.object({
+        x: z.number().describe("X position"),
+        y: z.number().describe("Y position"),
+        z: z.number().describe("Z position")
+    }).optional().describe("Position of the ellipsoid (default: random)"),
+    rotation: z.object({
+        x: z.number().describe("X rotation in radians"),
+        y: z.number().describe("Y rotation in radians"),
+        z: z.number().describe("Z rotation in radians")
+    }).optional().describe("Rotation of the ellipsoid (default: random)")
+}, async (params) => {
+    const url = `${API_BASE}/api/ellipsoids`;
+    
+    console.error("Received ellipsoid params:", JSON.stringify(params, null, 2));
+    
+    const paramsClone = params ? JSON.parse(JSON.stringify(params)) : {};
+    
+    if (paramsClone && paramsClone.color) {
+        if (typeof paramsClone.color === 'object' && 'r' in paramsClone.color) {
+            const { r, g, b } = paramsClone.color;
+            const hexColor = (r << 16) | (g << 8) | b;
+            console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${hexColor.toString(16)}`);
+            paramsClone.color = hexColor;
+        }
+    }
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(paramsClone || {})
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
+        }
+        
+        const ellipsoid = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `楕円体が追加されました。ID: ${ellipsoid.id}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(ellipsoid, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error adding ellipsoid:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `楕円体の追加に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
+// Add torus tool
+server.tool("add-torus", "新しいトーラス（ドーナツ型）をシーンに追加", {
+    radius: z.number().optional().describe("トーラスの半径 (default: 5)"),
+    tubeRadius: z.number().optional().describe("チューブの半径 (default: 2)"),
+    radialSegments: z.number().optional().describe("放射方向の分割数 (default: 8)"),
+    tubularSegments: z.number().optional().describe("チューブ方向の分割数 (default: 16)"),
+    color: z.object({
+        r: z.number().min(0).max(255).describe("Red component (0-255)"),
+        g: z.number().min(0).max(255).describe("Green component (0-255)"),
+        b: z.number().min(0).max(255).describe("Blue component (0-255)")
+    }).optional().describe("Color(RGB format) of the torus (default: random)"),
+    position: z.object({
+        x: z.number().describe("X position"),
+        y: z.number().describe("Y position"),
+        z: z.number().describe("Z position")
+    }).optional().describe("Position of the torus (default: random)"),
+    rotation: z.object({
+        x: z.number().describe("X rotation in radians"),
+        y: z.number().describe("Y rotation in radians"),
+        z: z.number().describe("Z rotation in radians")
+    }).optional().describe("Rotation of the torus (default: random)")
+}, async (params) => {
+    const url = `${API_BASE}/api/tori`;
+    
+    console.error("Received torus params:", JSON.stringify(params, null, 2));
+    
+    const paramsClone = params ? JSON.parse(JSON.stringify(params)) : {};
+    
+    if (paramsClone && paramsClone.color) {
+        if (typeof paramsClone.color === 'object' && 'r' in paramsClone.color) {
+            const { r, g, b } = paramsClone.color;
+            const hexColor = (r << 16) | (g << 8) | b;
+            console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${hexColor.toString(16)}`);
+            paramsClone.color = hexColor;
+        }
+    }
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(paramsClone || {})
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
+        }
+        
+        const torus = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `トーラスが追加されました。ID: ${torus.id}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(torus, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error adding torus:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `トーラスの追加に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 
 // Server start function
 async function main() {

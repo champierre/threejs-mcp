@@ -232,6 +232,28 @@ function addCubeFromData(cubeData) {
         mesh.scale.set(1, 1, 1);
         
         objectType = "減算された立体";
+    } else if (cubeData.type === 'ellipsoid') {
+        // 楕円体の場合
+        geometry = new THREE.SphereGeometry(
+            1, // 基準半径
+            cubeData.widthSegments || 32,  // 横方向の分割数
+            cubeData.heightSegments || 16  // 縦方向の分割数
+        );
+        // スケールで楕円体に変形
+        const scaleX = cubeData.radiusX || 5;
+        const scaleY = cubeData.radiusY || 5;
+        const scaleZ = cubeData.radiusZ || 5;
+        geometry.scale(scaleX, scaleY, scaleZ);
+        objectType = "楕円体";
+    } else if (cubeData.type === 'torus') {
+        // トーラス（ドーナツ型）の場合
+        geometry = new THREE.TorusGeometry(
+            cubeData.radius || 5,          // トーラスの半径
+            cubeData.tubeRadius || 2,      // チューブの半径
+            cubeData.radialSegments || 8,  // 放射方向の分割数
+            cubeData.tubularSegments || 16 // チューブ方向の分割数
+        );
+        objectType = "トーラス";
     } else if (cubeData.type === 'box' || cubeData.type === 'cube') {
         // 直方体（後方互換性のためcubeタイプもサポート）
         const width = cubeData.width || 10;
@@ -330,6 +352,26 @@ function createMeshFromData(data) {
             data.segments, // 底面の角の数
             1,             // 高さ方向の分割数
             false          // 開いた円錐にするかどうか
+        );
+    } else if (data.type === 'ellipsoid') {
+        // 楕円体の場合
+        geometry = new THREE.SphereGeometry(
+            1, // 基準半径
+            data.widthSegments || 32,  // 横方向の分割数
+            data.heightSegments || 16  // 縦方向の分割数
+        );
+        // スケールで楕円体に変形
+        const scaleX = data.radiusX || 5;
+        const scaleY = data.radiusY || 5;
+        const scaleZ = data.radiusZ || 5;
+        geometry.scale(scaleX, scaleY, scaleZ);
+    } else if (data.type === 'torus') {
+        // トーラス（ドーナツ型）の場合
+        geometry = new THREE.TorusGeometry(
+            data.radius || 5,          // トーラスの半径
+            data.tubeRadius || 2,      // チューブの半径
+            data.radialSegments || 8,  // 放射方向の分割数
+            data.tubularSegments || 16 // チューブ方向の分割数
         );
     } else if (data.type === 'box' || data.type === 'cube') {
         // 直方体（後方互換性のためcubeタイプもサポート）

@@ -523,6 +523,95 @@ app.get('/api/screenshot', async (req, res) => {
 });
 
 
+// 楕円体を追加するAPIエンドポイント
+app.post('/api/ellipsoids', (req, res) => {
+    console.log('Received ellipsoid request body:', JSON.stringify(req.body, null, 2));
+    const options = req.body || {};
+    
+    // デフォルト値を設定
+    const ellipsoid = {
+        id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
+        type: 'ellipsoid', // オブジェクトのタイプを指定
+        radiusX: options.radiusX || 5, // X軸の半径
+        radiusY: options.radiusY || 5, // Y軸の半径
+        radiusZ: options.radiusZ || 5, // Z軸の半径
+        widthSegments: options.widthSegments || 32, // 横方向の分割数
+        heightSegments: options.heightSegments || 16, // 縦方向の分割数
+        color: options.color || getRandomColor(),
+        position: options.position || {
+            x: Math.random() * 50 - 25,
+            y: Math.random() * 25 + 5,
+            z: Math.random() * 50 - 25
+        },
+        rotation: options.rotation || {
+            x: Math.random() * Math.PI,
+            y: Math.random() * Math.PI,
+            z: Math.random() * Math.PI
+        }
+    };
+    
+    // 楕円体を配列に追加
+    cubes.push(ellipsoid);
+    
+    // データをファイルに保存
+    saveCubesData();
+    
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'add',
+        cube: ellipsoid
+    });
+    
+    console.log(`楕円体が追加されました。ID: ${ellipsoid.id}, 現在のオブジェクト数: ${cubes.length}`);
+    
+    // 追加した楕円体を返す
+    res.status(201).json(ellipsoid);
+});
+
+// トーラス（ドーナツ型）を追加するAPIエンドポイント
+app.post('/api/tori', (req, res) => {
+    console.log('Received torus request body:', JSON.stringify(req.body, null, 2));
+    const options = req.body || {};
+    
+    // デフォルト値を設定
+    const torus = {
+        id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
+        type: 'torus', // オブジェクトのタイプを指定
+        radius: options.radius || 5, // トーラスの半径
+        tubeRadius: options.tubeRadius || 2, // チューブの半径
+        radialSegments: options.radialSegments || 8, // 放射方向の分割数
+        tubularSegments: options.tubularSegments || 16, // チューブ方向の分割数
+        color: options.color || getRandomColor(),
+        position: options.position || {
+            x: Math.random() * 50 - 25,
+            y: Math.random() * 25 + 5,
+            z: Math.random() * 50 - 25
+        },
+        rotation: options.rotation || {
+            x: Math.random() * Math.PI,
+            y: Math.random() * Math.PI,
+            z: Math.random() * Math.PI
+        }
+    };
+    
+    // トーラスを配列に追加
+    cubes.push(torus);
+    
+    // データをファイルに保存
+    saveCubesData();
+    
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'add',
+        cube: torus
+    });
+    
+    console.log(`トーラスが追加されました。ID: ${torus.id}, 現在のオブジェクト数: ${cubes.length}`);
+    
+    // 追加したトーラスを返す
+    res.status(201).json(torus);
+});
+
 // サーバーを起動
 server.listen(port, () => {
     console.log(`サーバーが http://localhost:${port} で起動しました`);

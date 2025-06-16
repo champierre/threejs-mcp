@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "threejs": {
+      "command": "node",
+      "args": ["mcp.js"],
+      "env": {}
+    }
+  }
+}

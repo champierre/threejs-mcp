@@ -569,6 +569,51 @@ server.tool("subtract-objects", "2つの立体を減算処理（くり抜き）�
     }
 });
 
+// Screenshot tool - takes a screenshot of the current 3D scene
+server.tool("take-screenshot", "現在の3Dシーンのスクリーンショットを取得", {}, async () => {
+    const url = `${API_BASE}/api/screenshot`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `スクリーンショットが保存されました: ${result.path}`,
+                    },
+                ],
+            };
+        } else {
+            throw new Error(result.error || 'スクリーンショットの取得に失敗しました');
+        }
+    } catch (error) {
+        console.error("Error taking screenshot:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `スクリーンショットの取得に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 
 // Server start function
 async function main() {

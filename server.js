@@ -438,6 +438,90 @@ app.post('/api/subtract', (req, res) => {
     });
 });
 
+// スクリーンショットを取得するAPIエンドポイント
+app.get('/api/screenshot', async (req, res) => {
+    try {
+        // クライアントからキャンバスデータを取得するために、
+        // WebSocketで特別なメッセージを送信
+        const screenshotPromise = new Promise((resolve, reject) => {
+            const screenshotId = Date.now();
+            
+            // タイムアウト設定
+            const timeout = setTimeout(() => {
+                reject(new Error('スクリーンショット取得タイムアウト'));
+            }, 5000);
+            
+            // 一時的なメッセージハンドラー
+            const messageHandler = (ws, data) => {
+                try {
+                    const msg = JSON.parse(data);
+                    if (msg.type === 'screenshot' && msg.screenshotId === screenshotId) {
+                        clearTimeout(timeout);
+                        resolve(msg.data);
+                    }
+                } catch (err) {
+                    // JSONパースエラーは無視
+                }
+            };
+            
+            // すべてのクライアントにスクリーンショット要求を送信
+            let responsiveClient = null;
+            wss.clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    // メッセージハンドラーを設定
+                    client.once('message', (data) => messageHandler(client, data));
+                    
+                    // スクリーンショット要求を送信
+                    client.send(JSON.stringify({
+                        type: 'screenshot_request',
+                        screenshotId: screenshotId
+                    }));
+                    
+                    if (!responsiveClient) {
+                        responsiveClient = client;
+                    }
+                }
+            });
+            
+            if (!responsiveClient) {
+                clearTimeout(timeout);
+                reject(new Error('接続されているクライアントがありません'));
+            }
+        });
+        
+        const screenshotData = await screenshotPromise;
+        
+        // Base64データURLからバイナリデータに変換
+        const base64Data = screenshotData.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // ファイルとして保存（オプション）
+        const screenshotPath = path.join(__dirname, 'screenshots', `screenshot_${Date.now()}.png`);
+        
+        // スクリーンショットディレクトリがなければ作成
+        const screenshotDir = path.join(__dirname, 'screenshots');
+        if (!fs.existsSync(screenshotDir)) {
+            fs.mkdirSync(screenshotDir);
+        }
+        
+        fs.writeFileSync(screenshotPath, buffer);
+        
+        res.json({ 
+            success: true, 
+            message: 'スクリーンショットが取得されました',
+            path: screenshotPath,
+            dataUrl: screenshotData
+        });
+        
+    } catch (error) {
+        console.error('スクリーンショット取得エラー:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 
 // サーバーを起動
 server.listen(port, () => {

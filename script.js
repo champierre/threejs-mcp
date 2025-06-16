@@ -55,6 +55,10 @@ function initWebSocket() {
                 // すべての立体が削除された場合
                 handleClearMessage();
                 break;
+            case 'screenshot_request':
+                // スクリーンショット要求が来た場合
+                handleScreenshotRequest(message);
+                break;
         }
     });
     
@@ -114,6 +118,25 @@ function handleClearMessage() {
     cubes.forEach(cube => scene.remove(cube));
     cubes.length = 0;
     console.log('すべての立体が削除されました');
+}
+
+// スクリーンショット要求を処理する関数
+function handleScreenshotRequest(message) {
+    // レンダリングを実行してから取得
+    renderer.render(scene, camera);
+    
+    // キャンバスからデータURLを取得
+    const dataUrl = renderer.domElement.toDataURL('image/png');
+    
+    // WebSocketでスクリーンショットデータを送信
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: 'screenshot',
+            screenshotId: message.screenshotId,
+            data: dataUrl
+        }));
+        console.log('スクリーンショットを送信しました');
+    }
 }
 
 
@@ -362,7 +385,10 @@ function init() {
     camera.lookAt(0, 0, 0);
 
     // レンダラーの設定
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        preserveDrawingBuffer: true // スクリーンショット取得のために必要
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     document.getElementById('scene-container').appendChild(renderer.domElement);

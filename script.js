@@ -81,9 +81,14 @@ function handleInitMessage(message) {
     cubes.forEach(cube => scene.remove(cube));
     cubes.length = 0;
     
-    // 受信したすべての立体を追加
+    // 受信したすべての立体を追加（非同期の場合に対応）
     message.cubes.forEach(cubeData => {
-        addCubeFromData(cubeData);
+        const result = addCubeFromData(cubeData);
+        if (result instanceof Promise) {
+            result.catch(error => {
+                console.error(`立体の初期化に失敗しました。ID: ${cubeData.id}`, error);
+            });
+        }
     });
     
     console.log(`${message.cubes.length}個の立体を初期化しました`);
@@ -96,9 +101,15 @@ function handleAddMessage(message) {
         return;
     }
     
-    // 立体を作成して表示
-    addCubeFromData(message.cube);
-    console.log(`新しい立体が追加されました。ID: ${message.cube.id}`);
+    // 立体を作成して表示（非同期の場合に対応）
+    const result = addCubeFromData(message.cube);
+    if (result instanceof Promise) {
+        result.then(() => {
+            console.log(`新しい立体が追加されました。ID: ${message.cube.id}`);
+        });
+    } else {
+        console.log(`新しい立体が追加されました。ID: ${message.cube.id}`);
+    }
 }
 
 // 立体削除メッセージを処理する関数
@@ -254,6 +265,64 @@ function addCubeFromData(cubeData) {
             cubeData.tubularSegments || 16 // チューブ方向の分割数
         );
         objectType = "トーラス";
+    } else if (cubeData.type === 'text') {
+        // 3Dテキストの場合
+        const fontLoader = new THREE.FontLoader();
+        
+        // フォントを非同期で読み込む
+        return new Promise((resolve) => {
+            fontLoader.load(`https://threejs.org/examples/fonts/${cubeData.font || 'helvetiker'}_regular.typeface.json`, (font) => {
+                const textGeometry = new THREE.TextGeometry(cubeData.text || 'Hello World', {
+                    font: font,
+                    size: cubeData.fontSize || 50,
+                    height: cubeData.height || 10,
+                    curveSegments: 12,
+                    bevelEnabled: false
+                });
+                
+                // ジオメトリを中央に配置
+                textGeometry.computeBoundingBox();
+                const centerOffsetX = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
+                const centerOffsetY = -0.5 * (textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y);
+                textGeometry.translate(centerOffsetX, centerOffsetY, 0);
+                
+                // 色の処理
+                let color = cubeData.color;
+                if (typeof color !== 'number') {
+                    console.error('Invalid color format:', color);
+                    color = 0xffffff;
+                }
+                
+                // マテリアルの作成
+                const material = new THREE.MeshStandardMaterial({
+                    color: color,
+                    metalness: 0.3,
+                    roughness: 0.4,
+                });
+                
+                // メッシュの作成
+                const textMesh = new THREE.Mesh(textGeometry, material);
+                
+                // オブジェクトの位置を設定
+                textMesh.position.set(cubeData.position.x, cubeData.position.y, cubeData.position.z);
+                
+                // オブジェクトの回転を設定
+                textMesh.rotation.set(cubeData.rotation.x, cubeData.rotation.y, cubeData.rotation.z);
+                
+                // APIから取得したIDを保存
+                textMesh.userData = { id: cubeData.id, type: cubeData.type };
+                
+                // シーンに追加
+                scene.add(textMesh);
+                
+                // 配列に追加
+                cubes.push(textMesh);
+                
+                console.log(`3Dテキスト"${cubeData.text}"が追加されました。ID: ${cubeData.id}, 現在のオブジェクト数: ${cubes.length}`);
+                
+                resolve(textMesh);
+            });
+        });
     } else if (cubeData.type === 'box' || cubeData.type === 'cube') {
         // 直方体（後方互換性のためcubeタイプもサポート）
         const width = cubeData.width || 10;

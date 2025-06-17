@@ -612,6 +612,50 @@ app.post('/api/tori', (req, res) => {
     res.status(201).json(torus);
 });
 
+// 3Dテキストを追加するAPIエンドポイント
+app.post('/api/texts', (req, res) => {
+    console.log('Received text request body:', JSON.stringify(req.body, null, 2));
+    const options = req.body || {};
+    
+    // デフォルト値を設定
+    const text = {
+        id: Date.now(), // ユニークIDとして現在のタイムスタンプを使用
+        type: 'text', // オブジェクトのタイプを指定
+        text: options.text || 'Hello World', // 表示するテキスト
+        fontSize: options.fontSize || 50, // フォントサイズ
+        height: options.height || 10, // テキストの厚み（押し出しの高さ）
+        font: options.font || 'helvetiker', // フォント名
+        color: options.color || getRandomColor(),
+        position: options.position || {
+            x: 0, // 中央に配置
+            y: 0,
+            z: 0
+        },
+        rotation: options.rotation || {
+            x: 0, // 回転なし
+            y: 0,
+            z: 0
+        }
+    };
+    
+    // 3Dテキストを配列に追加
+    cubes.push(text);
+    
+    // データをファイルに保存
+    saveCubesData();
+    
+    // WebSocketクライアントに通知
+    notifyClients({
+        type: 'add',
+        cube: text
+    });
+    
+    console.log(`3Dテキストが追加されました。ID: ${text.id}, テキスト: "${text.text}", 現在のオブジェクト数: ${cubes.length}`);
+    
+    // 追加した3Dテキストを返す
+    res.status(201).json(text);
+});
+
 // サーバーを起動
 server.listen(port, () => {
     console.log(`サーバーが http://localhost:${port} で起動しました`);

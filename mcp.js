@@ -775,6 +775,86 @@ server.tool("add-torus", "新しいトーラス（ドーナツ型）をシーン
     }
 });
 
+// Add text tool
+server.tool("add-text", "新しい3Dテキストをシーンに追加", {
+    text: z.string().describe("The text content to display"),
+    fontSize: z.number().optional().describe("Font size (default: 50)"),
+    height: z.number().optional().describe("Text extrusion height/depth (default: 10)"),
+    font: z.string().optional().describe("Font name (default: 'helvetiker')"),
+    color: z.object({
+        r: z.number().min(0).max(255).describe("Red component (0-255)"),
+        g: z.number().min(0).max(255).describe("Green component (0-255)"),
+        b: z.number().min(0).max(255).describe("Blue component (0-255)")
+    }).optional().describe("Color(RGB format) of the text (default: random)"),
+    position: z.object({
+        x: z.number().describe("X position"),
+        y: z.number().describe("Y position"),
+        z: z.number().describe("Z position")
+    }).optional().describe("Position of the text (default: center)"),
+    rotation: z.object({
+        x: z.number().describe("X rotation in radians"),
+        y: z.number().describe("Y rotation in radians"),
+        z: z.number().describe("Z rotation in radians")
+    }).optional().describe("Rotation of the text (default: no rotation)")
+}, async (params) => {
+    const url = `${API_BASE}/api/texts`;
+    
+    console.error("Received text params:", JSON.stringify(params, null, 2));
+    
+    const paramsClone = params ? JSON.parse(JSON.stringify(params)) : {};
+    
+    if (paramsClone && paramsClone.color) {
+        if (typeof paramsClone.color === 'object' && 'r' in paramsClone.color) {
+            const { r, g, b } = paramsClone.color;
+            const hexColor = (r << 16) | (g << 8) | b;
+            console.error(`Converting RGB(${r},${g},${b}) to hex: 0x${hexColor.toString(16)}`);
+            paramsClone.color = hexColor;
+        }
+    }
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(paramsClone || {})
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`HTTP error details: status: ${response.status}, url: ${url}, body: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}, url: ${url}, details: ${errorText}`);
+        }
+        
+        const text = await response.json();
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `3Dテキストが追加されました。ID: ${text.id}`,
+                },
+                {
+                    type: "text",
+                    text: JSON.stringify(text, null, 2),
+                },
+            ],
+        };
+    } catch (error) {
+        console.error("Error adding text:", error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `3Dテキストの追加に失敗しました: ${error.message}`,
+                },
+            ],
+        };
+    }
+});
+
 
 // Server start function
 async function main() {
